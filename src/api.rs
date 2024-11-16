@@ -9,6 +9,6 @@ pub fn config(cfg: &mut web::ServiceConfig) {
 }
 
 #[get("/hello")]
-pub async fn hello_world(_path: web::Path<String>, _pool: web::Data<BB8Pool>) -> Result<HttpResponse, Error> {
+pub async fn hello_world(_pool: web::Data<BB8Pool>) -> Result<HttpResponse, Error> {
     Ok(HttpResponse::Ok().body("Hello World!"))
 }

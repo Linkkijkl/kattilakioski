@@ -13,6 +13,7 @@ async fn main() -> std::io::Result<()> {
     // TODO: More secure logging
     pretty_env_logger::init();
 
+    // Initiate db connection pool
     let diesel_connection_manager =
         AsyncDieselConnectionManager::<diesel_async::AsyncPgConnection>::new(
             std::env::var("DATABASE_URL").unwrap_or("postgres://postgres".to_string()),

@@ -1,0 +1,11 @@
+services:
+  postgres:
+    image: postgres:alpine
+    restart: unless-stopped
+    volumes:
+      - "postgres-data:/var/lib/postgresql/data:rw"
+    environment:
+      - "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}"
+
+volumes:
+  postgres-data:
