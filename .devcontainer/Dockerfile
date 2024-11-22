@@ -14,8 +14,9 @@ RUN cargo install cargo-watch
 # Install Diesel cli tools
 RUN cargo install diesel_cli
 
-# Install clippy
+# Install clippy and rustfmt
 RUN rustup component add clippy-preview
+RUN rustup component add rustfmt
 
 # Install postgres cli
 RUN apt-get install -y postgresql-client
