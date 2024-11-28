@@ -21,14 +21,16 @@ async fn main() -> std::io::Result<()> {
     pretty_env_logger::init();
 
     // Cookie session middleware vars
-    let secret_key_str = std::env::var("SESSION_SECRET").unwrap_or("sessionsecret".to_string());
+    let secret_key_str = std::env::var("SESSION_SECRET")
+        .unwrap_or("sessionsecretsecretsecretsecretsecret".to_string());
     let cookie_secret_key = Key::derive_from(secret_key_str.as_bytes());
     const COOKIE_TTL: Duration = Duration::days(7);
 
     // Initiate db connection pool
     let diesel_connection_manager =
         AsyncDieselConnectionManager::<diesel_async::AsyncPgConnection>::new(
-            std::env::var("DATABASE_URL").unwrap_or("postgres://postgres".to_string()),
+            std::env::var("DATABASE_URL")
+                .unwrap_or("postgres://postgres:mysecretpassword@postgres".to_string()),
         );
     let diesel_connection_pool: BB8Pool = Pool::builder()
         .build(diesel_connection_manager)
@@ -41,17 +43,20 @@ async fn main() -> std::io::Result<()> {
         })?;
 
     HttpServer::new(move || {
+        let cookie_middleware =
+            SessionMiddleware::builder(CookieSessionStore::default(), cookie_secret_key.clone())
+                .session_lifecycle(PersistentSession::default().session_ttl(COOKIE_TTL))
+                .cookie_content_security(CookieContentSecurity::Private)
+                // Don't use secure cookies in debug builds as they require ssl
+                .cookie_secure(!cfg!(debug_assertions))
+                .build();
+
         App::new()
             .app_data(web::Data::new(diesel_connection_pool.clone()))
             .wrap(
                 middleware::DefaultHeaders::new().add(("content-type", "text/html; charset=UTF-8")),
             )
-            .wrap(
-                SessionMiddleware::builder(CookieSessionStore::default(), cookie_secret_key.clone())
-                    .session_lifecycle(PersistentSession::default().session_ttl(COOKIE_TTL))
-                    .cookie_content_security(CookieContentSecurity::Private)
-                    .build(),
-            )
+            .wrap(cookie_middleware)
             .wrap(middleware::Logger::new("%t %s %r %Dms"))
             .configure(api::config)
             .service(Files::new("/", "public").index_file("index.html"))

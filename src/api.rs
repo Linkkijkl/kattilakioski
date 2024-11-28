@@ -1,17 +1,18 @@
-use std::sync::LazyLock;
 use actix_session::Session;
 use actix_web::{error, get, web, Error, HttpResponse};
 use diesel::prelude::*;
 use diesel::ExpressionMethods;
 use diesel_async::RunQueryDsl;
 use serde::Deserialize;
+use serde::Serialize;
+use std::sync::LazyLock;
 
 use crate::models::User;
 use crate::BB8Pool;
 
 const LOGGED_IN_KEY: &str = "logged_in";
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct UserQuery {
     username: String,
     password: String,
@@ -30,11 +31,9 @@ fn set_login_uid(session: &Session, uid: i32) -> Result<(), Error> {
 }
 
 // Get salt from environment on first access
-static SALT: LazyLock<String> = LazyLock::new(|| {
-    match std::env::var("SALT") {
-        Ok(val) => val,
-        Err(_) => "defaultsalt".to_string(),
-    }
+static SALT: LazyLock<String> = LazyLock::new(|| match std::env::var("SALT") {
+    Ok(val) => val,
+    Err(_) => "defaultsalt".to_string(),
 });
 
 // Hash password with salt
@@ -61,21 +60,38 @@ pub async fn new_user(
     // Validate username
     let whitespace = query.username.as_str().split_whitespace().count();
     if whitespace > 1 {
-        return Err(error::ErrorBadRequest("No whitespace allowed in username!"));
+        return Err(error::ErrorBadRequest("No whitespace allowed in username"));
     }
 
     let mut con = pool.get().await.map_err(error::ErrorInternalServerError)?;
+
+    // Check if username is already registered
+    let results = users
+        .filter(username.eq(&query.username))
+        .limit(1)
+        .select(User::as_select())
+        .load(&mut con)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+    if !results.is_empty() {
+        return Err(error::ErrorBadRequest("User already registered"));
+    }
 
     let password = hash(&query.password);
 
     // Insert into db
     let user = diesel::insert_into(crate::schema::users::table)
-        .values((username.eq(&query.username), password_hash.eq(password)))
+        .values((
+            username.eq(&query.username),
+            password_hash.eq(password),
+            created_at.eq(chrono::offset::Utc::now()),
+        ))
         .returning(User::as_returning())
         .get_result(&mut con)
         .await
         .map_err(error::ErrorInternalServerError)?;
 
+    // Log new user in
     set_login_uid(&session, user.id)?;
     Ok(HttpResponse::Ok().body("OK"))
 }
@@ -132,6 +148,25 @@ pub async fn user_info(pool: web::Data<BB8Pool>, session: Session) -> Result<Htt
     Ok(HttpResponse::Ok().json(user))
 }
 
+#[get("/debug/db/clear")]
+pub async fn clear_db(pool: web::Data<BB8Pool>) -> Result<HttpResponse, Error> {
+    use crate::schema::users::dsl::*;
+
+    if !cfg!(debug_assertions) {
+        return Err(error::ErrorNotFound(
+            "Feature only available in debug builds",
+        ));
+    }
+
+    let mut con = pool.get().await.map_err(error::ErrorInternalServerError)?;
+    diesel::delete(users)
+        .execute(&mut con)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    Ok(HttpResponse::Ok().body("OK"))
+}
+
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/api")
@@ -139,6 +174,88 @@ pub fn config(cfg: &mut web::ServiceConfig) {
             .service(login)
             .service(logout)
             .service(user_info)
-            .service(new_user),
+            .service(new_user)
+            .service(clear_db),
     );
+}
+
+#[cfg(test)]
+mod tests {
+
+    use std::sync::Arc;
+
+    use reqwest::Result;
+
+    use super::*;
+    const URL: &str = "http://backend:3030";
+
+    #[test]
+    fn api_is_responsive() -> Result<()> {
+        let status = reqwest::blocking::get(format!("{URL}/api/hello"))?
+            .status();
+        assert_eq!(status, 200, "Could not reach API. Make sure server is running and available in `{URL}` before running tests.");
+        Ok(())
+    }
+
+    #[test]
+    fn account_operations() -> Result<()> {
+        // Set some variables up for testing
+        let cookie_provider = Arc::new(reqwest::cookie::Jar::default());
+        let client = reqwest::blocking::ClientBuilder::new()
+            .cookie_provider(cookie_provider.clone())
+            .build()?;
+        let user_query = UserQuery {
+            username: "test".to_string(),
+            password: "test".to_string(),
+        };
+
+        // Clear database for testing
+        let result = client.get(format!("{URL}/api/debug/db/clear"))
+            .send()?;
+        assert_eq!(result.status(), 200, "Could not clear db. Make sure the server is compiled in debug mode.");
+
+        // Log in with nonexsistent user
+        let result = client.get(format!("{URL}/api/user/login")).json(&user_query).send()?;
+        assert_ne!(
+            result.status(),
+            200,
+            "Login returned ok status with bad user info"
+        );
+
+        // Create a new user
+        let result = client
+            .get(format!("{URL}/api/user/new"))
+            .json(&user_query)
+            .send()?;
+        assert_eq!(result.status(), 200, "Could not create a new user");
+
+        // Inspect cookies
+        // println!("{:?}", cookie_provider);
+
+        // Get user info
+        let result = client.get(format!("{URL}/api/user/info")).send()?;
+        assert_eq!(result.status(), 200, "Could not get user info");
+
+        // Log user out
+        let result = client.get(format!("{URL}/api/user/logout")).send()?;
+        assert_eq!(result.status(), 200, "Could not log out");
+
+        // Get user info without a session
+        let result = client.get(format!("{URL}/api/user/info")).send()?;
+        assert_ne!(
+            result.status(),
+            200,
+            "User info returned wrong status without valid session"
+        );
+
+        // Log out without a session
+        let result = client.get(format!("{URL}/api/user/logout")).send()?;
+        assert_ne!(
+            result.status(),
+            200,
+            "Logout returned wrong status without valid session"
+        );
+
+        Ok(())
+    }
 }
