@@ -1,0 +1,9 @@
+CREATE TABLE items (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR NOT NULL,
+    description VARCHAR NOT NULL,
+    price_cents INTEGER DEFAULT 0 NOT NULL,
+    amount INTEGER DEFAULT 1 NOT NULL,
+    seller_id INTEGER NOT NULL REFERENCES users(id),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL
+);

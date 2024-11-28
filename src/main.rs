@@ -50,14 +50,15 @@ async fn main() -> std::io::Result<()> {
                 // Don't use secure cookies in debug builds as they require ssl
                 .cookie_secure(!cfg!(debug_assertions))
                 .build();
+        let headers_middleware =
+            middleware::DefaultHeaders::new().add(("content-type", "text/html; charset=UTF-8"));
+        let logger_middleware = middleware::Logger::new("%t %s %r %Dms");
 
         App::new()
             .app_data(web::Data::new(diesel_connection_pool.clone()))
-            .wrap(
-                middleware::DefaultHeaders::new().add(("content-type", "text/html; charset=UTF-8")),
-            )
+            .wrap(headers_middleware)
             .wrap(cookie_middleware)
-            .wrap(middleware::Logger::new("%t %s %r %Dms"))
+            .wrap(logger_middleware)
             .configure(api::config)
             .service(Files::new("/", "public").index_file("index.html"))
     })
