@@ -7,6 +7,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use std::sync::LazyLock;
 
+use crate::models::Item;
 use crate::models::User;
 use crate::BB8Pool;
 
@@ -152,6 +153,7 @@ pub async fn user_info(pool: web::Data<BB8Pool>, session: Session) -> Result<Htt
 pub async fn clear_db(pool: web::Data<BB8Pool>) -> Result<HttpResponse, Error> {
     use crate::schema::users::dsl::*;
 
+    // Prevent access when not running a debug build
     if !cfg!(debug_assertions) {
         return Err(error::ErrorNotFound(
             "Feature only available in debug builds",
@@ -165,6 +167,71 @@ pub async fn clear_db(pool: web::Data<BB8Pool>) -> Result<HttpResponse, Error> {
         .map_err(error::ErrorInternalServerError)?;
 
     Ok(HttpResponse::Ok().body("OK"))
+}
+
+#[derive(Deserialize)]
+struct ItemQuery {
+    search_term: Option<String>,
+    offset: Option<i64>,
+    limit: Option<i64>,
+}
+
+#[get("/item/list")]
+pub async fn get_items(
+    pool: web::Data<BB8Pool>,
+    query: Option<web::Json<ItemQuery>>,
+) -> Result<HttpResponse, Error> {
+    use crate::schema::items::dsl::*;
+
+    let mut con = pool.get().await.map_err(error::ErrorInternalServerError)?;
+
+    // Default values
+    let mut search_term = "".to_string();
+    let mut offset = 0;
+    let mut limit = 20;
+
+    // Limits
+    const SEARCH_MAX_LENGTH: usize = 50;
+    const OFFSET_MIN: i64 = 0;
+    const LIMIT_CONSTRAINTS: (i64, i64) = (1, 100);
+
+    // Overwrite default values with ones provided in item query
+    if let Some(query) = &query {
+        if let Some(val) = &query.search_term {
+            if val.len() > SEARCH_MAX_LENGTH {
+                return Err(error::ErrorBadRequest("Search term too long"));
+            }
+            search_term = val.to_owned();
+        }
+        if let Some(val) = &query.offset {
+            if *val < OFFSET_MIN {
+                return Err(error::ErrorBadRequest(format!(
+                    "Offset must be at least {OFFSET_MIN}"
+                )));
+            }
+            offset = val.to_owned();
+        }
+        if let Some(val) = &query.limit {
+            if *val < LIMIT_CONSTRAINTS.0 || *val > LIMIT_CONSTRAINTS.1 {
+                return Err(error::ErrorBadRequest(format!(
+                    "Limit must be at least {} and at max {}",
+                    LIMIT_CONSTRAINTS.0, LIMIT_CONSTRAINTS.1
+                )));
+            }
+            limit = val.to_owned();
+        }
+    }
+
+    // Query db and return results
+    let result = items
+        .filter(title.ilike(search_term))
+        .offset(offset + 1) // Translate to dns indexes which start from 1
+        .limit(limit)
+        .select(Item::as_select())
+        .get_result(&mut con)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+    Ok(HttpResponse::Ok().json(result))
 }
 
 pub fn config(cfg: &mut web::ServiceConfig) {
@@ -191,8 +258,7 @@ mod tests {
 
     #[test]
     fn api_is_responsive() -> Result<()> {
-        let status = reqwest::blocking::get(format!("{URL}/api/hello"))?
-            .status();
+        let status = reqwest::blocking::get(format!("{URL}/api/hello"))?.status();
         assert_eq!(status, 200, "Could not reach API. Make sure server is running and available in `{URL}` before running tests.");
         Ok(())
     }
@@ -210,12 +276,18 @@ mod tests {
         };
 
         // Clear database for testing
-        let result = client.get(format!("{URL}/api/debug/db/clear"))
-            .send()?;
-        assert_eq!(result.status(), 200, "Could not clear db. Make sure the server is compiled in debug mode.");
+        let result = client.get(format!("{URL}/api/debug/db/clear")).send()?;
+        assert_eq!(
+            result.status(),
+            200,
+            "Could not clear db. Make sure the server is compiled in debug mode."
+        );
 
         // Log in with nonexsistent user
-        let result = client.get(format!("{URL}/api/user/login")).json(&user_query).send()?;
+        let result = client
+            .get(format!("{URL}/api/user/login"))
+            .json(&user_query)
+            .send()?;
         assert_ne!(
             result.status(),
             200,
