@@ -137,7 +137,7 @@ pub async fn logout(session: Session) -> Result<HttpResponse, Error> {
 pub async fn user_info(pool: web::Data<BB8Pool>, session: Session) -> Result<HttpResponse, Error> {
     use crate::schema::users::dsl::*;
 
-    let uid = get_login_uid(&session)?.ok_or(error::ErrorUnauthorized("Not logged in"))?;
+    let uid = get_login_uid(&session)?.ok_or_else(|| error::ErrorUnauthorized("Not logged in"))?;
     let mut con = pool.get().await.map_err(error::ErrorInternalServerError)?;
 
     let user = users
@@ -234,6 +234,109 @@ pub async fn get_items(
     Ok(HttpResponse::Ok().json(result))
 }
 
+#[derive(Deserialize)]
+struct NewItemQuery {
+    title: String,
+    description: String,
+    amount: usize,
+    price: String,
+}
+
+fn parse_decimal_to_cents(string: String) -> Result<usize, ()> {
+    let split: Vec<&str> = string.split(['.', ',']).collect();
+    let flattened = split.concat();
+    if split.len() != 2
+        || split[0].is_empty()
+        || split[1].len() != 2
+        || !flattened.chars().all(char::is_numeric)
+    {
+        return Err(());
+    }
+    let cents = flattened.parse::<usize>().map_err(|_| ())?;
+    Ok(cents)
+}
+
+#[get("/item/new")]
+pub async fn new_item(
+    pool: web::Data<BB8Pool>,
+    query: web::Json<NewItemQuery>,
+    session: Session,
+) -> Result<HttpResponse, Error> {
+    use crate::schema::{items, users};
+
+    // Limits
+    const MAX_TITLE_LENGTH: usize = 50;
+    const MAX_DESCRIPTION_LENGTH: usize = 500;
+    const MAX_ITEM_AMOUNT: usize = 50;
+    const MAX_PRICE_CENTS: usize = 15_00;
+    const MIN_PRICE_CENTS: usize = 1;
+
+    let user_id =
+        get_login_uid(&session)?.ok_or_else(|| error::ErrorUnauthorized("Not logged in"))?;
+
+    let item_title = query.title.trim().to_string();
+    if item_title.len() > MAX_TITLE_LENGTH {
+        return Err(error::ErrorBadRequest(format!(
+            "Title can be at most {MAX_TITLE_LENGTH} characters long"
+        )));
+    }
+
+    let item_description = query.description.trim().to_string();
+    if item_description.len() > MAX_DESCRIPTION_LENGTH {
+        return Err(error::ErrorBadRequest(format!(
+            "Description can be at most {MAX_DESCRIPTION_LENGTH} characters long"
+        )));
+    }
+
+    let item_amount = query.amount;
+    if !(1..MAX_ITEM_AMOUNT).contains(&item_amount) {
+        return Err(error::ErrorBadRequest(format!(
+            "Amount must be at least 1 and at most {MAX_ITEM_AMOUNT}"
+        )));
+    }
+    let item_amount = item_amount as i32;
+
+    let item_price_cents = parse_decimal_to_cents(query.price.clone()).map_err(|_| {
+        error::ErrorBadRequest("Price must be in decimal format with cents, i.e 9.95")
+    })?;
+    if !(MIN_PRICE_CENTS..MAX_PRICE_CENTS).contains(&item_price_cents) {
+        return Err(error::ErrorBadRequest(format!(
+            "Price must be at least {MIN_PRICE_CENTS} cents and at most {MAX_PRICE_CENTS} cents"
+        )));
+    }
+    let item_price_cents = item_price_cents as i32;
+
+    // Aquire db connection hande only when needed, to avoid aquiring it in vein on bad user input
+    let mut con = pool.get().await.map_err(error::ErrorInternalServerError)?;
+
+    // Insert into db
+    let item = diesel::insert_into(items::table)
+        .values((
+            items::columns::title.eq(item_title),
+            items::columns::description.eq(item_description),
+            items::columns::amount.eq(item_amount),
+            items::columns::price_cents.eq(item_price_cents),
+            items::columns::seller_id.eq(user_id),
+            items::columns::created_at.eq(chrono::offset::Utc::now()),
+        ))
+        .returning(Item::as_returning())
+        .get_result(&mut con)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    // Add appropriate amount of cents to sellers balance
+    diesel::update(users::table)
+        .set(
+            users::columns::balance_cents
+                .eq(users::columns::balance_cents + item_price_cents * item_amount),
+        )
+        .execute(&mut con)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    Ok(HttpResponse::Ok().json(item))
+}
+
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/api")
@@ -242,7 +345,9 @@ pub fn config(cfg: &mut web::ServiceConfig) {
             .service(logout)
             .service(user_info)
             .service(new_user)
-            .service(clear_db),
+            .service(clear_db)
+            .service(get_items)
+            .service(new_item),
     );
 }
 
@@ -256,6 +361,7 @@ mod tests {
     use super::*;
     const URL: &str = "http://backend:3030";
 
+    // Test if api is available
     #[test]
     fn api_is_responsive() -> Result<()> {
         let status = reqwest::blocking::get(format!("{URL}/api/hello"))?.status();
@@ -263,9 +369,10 @@ mod tests {
         Ok(())
     }
 
+    // Test account operations
     #[test]
     fn account_operations() -> Result<()> {
-        // Set some variables up for testing
+        // Set things up for testing
         let cookie_provider = Arc::new(reqwest::cookie::Jar::default());
         let client = reqwest::blocking::ClientBuilder::new()
             .cookie_provider(cookie_provider.clone())
