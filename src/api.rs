@@ -2,7 +2,9 @@ use actix_session::Session;
 use actix_web::{error, get, web, Error, HttpResponse};
 use diesel::prelude::*;
 use diesel::ExpressionMethods;
+use diesel_async::AsyncConnection;
 use diesel_async::RunQueryDsl;
+use futures::try_join;
 use serde::Deserialize;
 use serde::Serialize;
 use std::sync::LazyLock;
@@ -46,7 +48,7 @@ fn hash(pass: &str) -> String {
 }
 
 #[get("/hello")]
-pub async fn hello_world(_pool: web::Data<BB8Pool>) -> Result<HttpResponse, Error> {
+pub async fn hello_world() -> Result<HttpResponse, Error> {
     Ok(HttpResponse::Ok().body("Hello World!"))
 }
 
@@ -64,6 +66,7 @@ pub async fn new_user(
         return Err(error::ErrorBadRequest("No whitespace allowed in username"));
     }
 
+    // Aquire a connection hande to db
     let mut con = pool.get().await.map_err(error::ErrorInternalServerError)?;
 
     // Check if username is already registered
@@ -242,6 +245,7 @@ struct NewItemQuery {
     price: String,
 }
 
+// Parses string of form 1.23 to number like 123
 fn parse_decimal_to_cents(string: String) -> Result<usize, ()> {
     let split: Vec<&str> = string.split(['.', ',']).collect();
     let flattened = split.concat();
@@ -270,6 +274,8 @@ pub async fn new_item(
     const MAX_ITEM_AMOUNT: usize = 50;
     const MAX_PRICE_CENTS: usize = 15_00;
     const MIN_PRICE_CENTS: usize = 1;
+
+    // Gather and validate input
 
     let user_id =
         get_login_uid(&session)?.ok_or_else(|| error::ErrorUnauthorized("Not logged in"))?;
@@ -306,7 +312,7 @@ pub async fn new_item(
     }
     let item_price_cents = item_price_cents as i32;
 
-    // Aquire db connection hande only when needed, to avoid aquiring it in vein on bad user input
+    // Aquire db connection hande only when needed, to avoid aquiring it for no use on bad user input
     let mut con = pool.get().await.map_err(error::ErrorInternalServerError)?;
 
     // Insert into db
@@ -337,6 +343,92 @@ pub async fn new_item(
     Ok(HttpResponse::Ok().json(item))
 }
 
+#[derive(Deserialize)]
+struct BuyQuery {
+    item_id: i32,
+    amount: Option<i32>,
+}
+
+#[get("/item/buy")]
+pub async fn buy_item(
+    pool: web::Data<BB8Pool>,
+    query: web::Json<BuyQuery>,
+    session: Session,
+) -> Result<HttpResponse, Error> {
+    use crate::schema::{items, users};
+
+    // Gather and validate input
+    let user_id =
+        get_login_uid(&session)?.ok_or_else(|| error::ErrorUnauthorized("Not logged in"))?;
+    let item_id = query.item_id;
+    let item_amount = query.amount.unwrap_or(1);
+
+    let mut con = pool.get().await.map_err(error::ErrorInternalServerError)?;
+
+    // Run the whole buy operation inside a transaction to prevent double spending
+    let result: Result<Result<(), &str>, diesel::result::Error> = con
+        .transaction(move |con| {
+            Box::pin(async move {
+                // Fetch item from db and perform checks
+                let items = items::table
+                    .filter(items::columns::id.eq(item_id))
+                    .select(Item::as_select())
+                    .load(con)
+                    .await?;
+                let item = match &items[..] {
+                    [item] => item,
+                    _ => return Ok(Err("Item not found")),
+                };
+                if item.amount < item_amount {
+                    return Ok(Err("Not enough item in stock"));
+                }
+                let total_price = item_amount * item.price_cents;
+
+                // Same for user
+                let users = users::table
+                    .filter(users::columns::id.eq(user_id))
+                    .select(User::as_select())
+                    .load(con)
+                    .await?;
+                let user = match &users[..] {
+                    [user] => user,
+                    _ => return Ok(Err("Your user does not exist")), // Weird but possible using 2 sessions and deleting users account from one
+                };
+                if user.balance_cents < total_price {
+                    return Ok(Err("You don't have enough balance on your account"));
+                }
+
+                // All checks ok, do the transaction
+                try_join!(
+                    // Update item
+                    diesel::update(items::table)
+                        .filter(items::columns::id.eq(item_id))
+                        .set(items::columns::amount.eq(items::columns::amount - item_amount))
+                        .execute(con),
+                    // Update user
+                    diesel::update(users::table)
+                        .filter(users::columns::id.eq(user_id))
+                        .set(
+                            users::columns::balance_cents
+                                .eq(users::columns::balance_cents - total_price)
+                        )
+                        .execute(con)
+                )?;
+
+                Ok(Ok(()))
+            })
+        })
+        .await;
+
+    // Propagate errors from transaction
+    result
+        .map_err(error::ErrorInternalServerError)?
+        .map_err(error::ErrorBadRequest)?;
+
+    // If we got here, the transaction was a success
+    Ok(HttpResponse::Ok().body("OK"))
+}
+
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/api")
@@ -347,7 +439,8 @@ pub fn config(cfg: &mut web::ServiceConfig) {
             .service(new_user)
             .service(clear_db)
             .service(get_items)
-            .service(new_item),
+            .service(new_item)
+            .service(buy_item),
     );
 }
 
