@@ -1,9 +1,10 @@
 use diesel::prelude::*;
+use serde::{Serialize, Deserialize};
 
 #[derive(Queryable, Selectable, Identifiable, Debug, PartialEq)]
 #[diesel(table_name = crate::schema::users)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
-#[derive(serde::Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct User {
     pub id: i32,
     pub username: String,
@@ -17,7 +18,7 @@ pub struct User {
 #[diesel(belongs_to(User, foreign_key = seller_id))]
 #[diesel(table_name = crate::schema::items)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
-#[derive(serde::Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct Item {
     pub id: i32,
     pub title: String,

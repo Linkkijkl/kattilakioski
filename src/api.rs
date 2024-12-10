@@ -154,6 +154,7 @@ pub async fn user_info(pool: web::Data<BB8Pool>, session: Session) -> Result<Htt
 
 #[get("/debug/db/clear")]
 pub async fn clear_db(pool: web::Data<BB8Pool>) -> Result<HttpResponse, Error> {
+    use crate::schema::items::dsl::*;
     use crate::schema::users::dsl::*;
 
     // Prevent access when not running a debug build
@@ -164,6 +165,12 @@ pub async fn clear_db(pool: web::Data<BB8Pool>) -> Result<HttpResponse, Error> {
     }
 
     let mut con = pool.get().await.map_err(error::ErrorInternalServerError)?;
+
+    // Remove everything ( in correct order! )
+    diesel::delete(items)
+        .execute(&mut con)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
     diesel::delete(users)
         .execute(&mut con)
         .await
@@ -172,7 +179,7 @@ pub async fn clear_db(pool: web::Data<BB8Pool>) -> Result<HttpResponse, Error> {
     Ok(HttpResponse::Ok().body("OK"))
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct ItemQuery {
     search_term: Option<String>,
     offset: Option<i64>,
@@ -189,7 +196,6 @@ pub async fn get_items(
     let mut con = pool.get().await.map_err(error::ErrorInternalServerError)?;
 
     // Default values
-    let mut search_term = "".to_string();
     let mut offset = 0;
     let mut limit = 20;
 
@@ -198,13 +204,26 @@ pub async fn get_items(
     const OFFSET_MIN: i64 = 0;
     const LIMIT_CONSTRAINTS: (i64, i64) = (1, 100);
 
+    let mut db_query = items.into_boxed();
+
     // Overwrite default values with ones provided in item query
     if let Some(query) = &query {
-        if let Some(val) = &query.search_term {
-            if val.len() > SEARCH_MAX_LENGTH {
+        if let Some(search_term) = &query.search_term {
+            if search_term.len() > SEARCH_MAX_LENGTH {
                 return Err(error::ErrorBadRequest("Search term too long"));
             }
-            search_term = val.to_owned();
+
+            // Surround search term with wildmarks and escape accidental (or not) wildmarks provided by user
+            let escaped: String = search_term
+                .chars()
+                .flat_map(|c| match c {
+                    '%' => vec!['\\', '%'],
+                    '\\' => vec!['\\', '\\'],
+                    c => vec![c],
+                })
+                .collect();
+            let wildmarked = format!("%{escaped}%");
+            db_query = db_query.filter(title.ilike(wildmarked));
         }
         if let Some(val) = &query.offset {
             if *val < OFFSET_MIN {
@@ -226,18 +245,17 @@ pub async fn get_items(
     }
 
     // Query db and return results
-    let result = items
-        .filter(title.ilike(search_term))
-        .offset(offset + 1) // Translate to dns indexes which start from 1
+    let result = db_query
+        .offset(offset)
         .limit(limit)
         .select(Item::as_select())
-        .get_result(&mut con)
+        .load(&mut con)
         .await
         .map_err(error::ErrorInternalServerError)?;
     Ok(HttpResponse::Ok().json(result))
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct NewItemQuery {
     title: String,
     description: String,
@@ -245,18 +263,17 @@ struct NewItemQuery {
     price: String,
 }
 
-// Parses string of form 1.23 to number like 123
+// Parses string of form 1.23 to number like 123, see tests
 fn parse_decimal_to_cents(string: String) -> Result<usize, ()> {
     let split: Vec<&str> = string.split(['.', ',']).collect();
     let flattened = split.concat();
-    if split.len() != 2
-        || split[0].is_empty()
-        || split[1].len() != 2
-        || !flattened.chars().all(char::is_numeric)
-    {
+    let splits = split.len();
+    if (splits >= 2 && split[1].len() > 2) || !flattened.chars().all(char::is_numeric) {
         return Err(());
     }
-    let cents = flattened.parse::<usize>().map_err(|_| ())?;
+    let exp = if splits < 2 { 2 } else { 2 - split[1].len() };
+    let mult = 10_usize.pow(exp as u32);
+    let cents = flattened.parse::<usize>().map_err(|_| ())? * mult;
     Ok(cents)
 }
 
@@ -332,6 +349,7 @@ pub async fn new_item(
 
     // Add appropriate amount of cents to sellers balance
     diesel::update(users::table)
+        .filter(users::columns::id.eq(user_id))
         .set(
             users::columns::balance_cents
                 .eq(users::columns::balance_cents + item_price_cents * item_amount),
@@ -343,7 +361,7 @@ pub async fn new_item(
     Ok(HttpResponse::Ok().json(item))
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct BuyQuery {
     item_id: i32,
     amount: Option<i32>,
@@ -454,6 +472,21 @@ mod tests {
     use super::*;
     const URL: &str = "http://backend:3030";
 
+    // Currency parsing tests
+    #[test]
+    fn currency_formatter_works() {
+        assert_eq!(parse_decimal_to_cents("0.01".to_string()), Ok(1));
+        assert_eq!(parse_decimal_to_cents("5,1".to_string()), Ok(510));
+        assert_eq!(parse_decimal_to_cents("1".to_string()), Ok(100));
+        assert_eq!(parse_decimal_to_cents("1,".to_string()), Ok(100));
+        assert_eq!(parse_decimal_to_cents("1.12".to_string()), Ok(112));
+
+        assert_eq!(parse_decimal_to_cents("0.001".to_string()), Err(()));
+        assert_eq!(parse_decimal_to_cents("1.123".to_string()), Err(()));
+        assert_eq!(parse_decimal_to_cents("5€".to_string()), Err(()));
+        assert_eq!(parse_decimal_to_cents("-5.14,".to_string()), Err(()));
+    }
+
     // Test if api is available
     #[test]
     fn api_is_responsive() -> Result<()> {
@@ -465,7 +498,7 @@ mod tests {
     // Test account operations
     #[test]
     fn account_operations() -> Result<()> {
-        // Set things up for testing
+        // Set variables and objects up for testing
         let cookie_provider = Arc::new(reqwest::cookie::Jar::default());
         let client = reqwest::blocking::ClientBuilder::new()
             .cookie_provider(cookie_provider.clone())
@@ -527,6 +560,136 @@ mod tests {
             200,
             "Logout returned wrong status without valid session"
         );
+
+        Ok(())
+    }
+
+    // Test selling and buying
+    #[test]
+    fn item_operations() -> Result<()> {
+        // Set variables and objects up for testing
+        let cookie_provider = Arc::new(reqwest::cookie::Jar::default());
+        let client = reqwest::blocking::ClientBuilder::new()
+            .cookie_provider(cookie_provider.clone())
+            .build()?;
+        let cookie_provider2 = Arc::new(reqwest::cookie::Jar::default());
+        let client2 = reqwest::blocking::ClientBuilder::new()
+            .cookie_provider(cookie_provider2.clone())
+            .build()?;
+
+        // Clear database for testing
+        let result = client.get(format!("{URL}/api/debug/db/clear")).send()?;
+        assert_eq!(
+            result.status(),
+            200,
+            "Could not clear db. Make sure the server is compiled in debug mode."
+        );
+
+        // Register test users and log them in to their clients
+        let result = client
+            .get(format!("{URL}/api/user/new"))
+            .json(&UserQuery {
+                username: "test".to_string(),
+                password: "test".to_string(),
+            })
+            .send()?;
+        assert_eq!(result.status(), 200, "Could not create a new user");
+
+        let result = client2
+            .get(format!("{URL}/api/user/new"))
+            .json(&UserQuery {
+                username: "test2".to_string(),
+                password: "test".to_string(),
+            })
+            .send()?;
+        assert_eq!(result.status(), 200, "Could not create a second user");
+
+        // Test selling items
+        let result = client
+            .get(format!("{URL}/api/item/new"))
+            .json(&NewItemQuery {
+                title: "test item".to_string(),
+                description: "test description".to_string(),
+                amount: 3,
+                price: "1.11".to_string(),
+            })
+            .send()?;
+        let item: Item = result.json()?;
+        assert_eq!(item.price_cents, 111, "Could not create new item for sale");
+
+        let result = client2
+            .get(format!("{URL}/api/item/new"))
+            .json(&NewItemQuery {
+                title: "the best item".to_string(),
+                description: "the best item description".to_string(),
+                amount: 1,
+                price: "2,5".to_string(),
+            })
+            .send()?;
+        let item2: Item = result.json()?;
+
+        assert_eq!(
+            item2.price_cents, 250,
+            "Could not create new item for sale from second user"
+        );
+
+        #[derive(Deserialize)]
+        struct TestUserQuery {
+            balance_cents: usize,
+        }
+
+        // Test user balances
+        let result = client.get(format!("{URL}/api/user/info")).send()?;
+        let user: TestUserQuery = result.json()?;
+        assert_eq!(user.balance_cents, 333, "User has unexpected balance");
+
+        let result = client2.get(format!("{URL}/api/user/info")).send()?;
+        let user: TestUserQuery = result.json()?;
+        assert_eq!(user.balance_cents, 250, "User has unexpected balance");
+
+        // Item listing
+        let result = client.get(format!("{URL}/api/item/list")).send()?;
+        let items: Vec<Item> = result.json()?;
+        assert_eq!(
+            items.len(),
+            2,
+            "Item query resulted in incorrect amount of available items"
+        );
+
+        // Item searching
+        let result = client
+            .get(format!("{URL}/api/item/list"))
+            .json(&ItemQuery {
+                search_term: Some("best".to_string()),
+                limit: None,
+                offset: None,
+            })
+            .send()?;
+        let items: Vec<Item> = result.json()?;
+        println!("{:?}", items);
+        let got_item = items.get(0).unwrap();
+        assert_eq!(*got_item, item2);
+
+        println!("5");
+
+        // Item buying
+        let result = client
+            .get(format!("{URL}/api/item/buy"))
+            .json(&BuyQuery {
+                item_id: item2.id,
+                amount: Some(1),
+            })
+            .send()?;
+        assert_eq!(result.status(), 200, "Could not buy an item");
+
+        let result = client2
+            .get(format!("{URL}/api/item/buy"))
+            .json(&BuyQuery {
+                item_id: item.id,
+                amount: Some(2),
+            })
+            .send()?;
+        assert_eq!(result.status(), 200, "Second user could not buy an item");
 
         Ok(())
     }
