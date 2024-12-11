@@ -670,8 +670,6 @@ mod tests {
         let got_item = items.get(0).unwrap();
         assert_eq!(*got_item, item2);
 
-        println!("5");
-
         // Item buying
         let result = client
             .get(format!("{URL}/api/item/buy"))
@@ -690,6 +688,15 @@ mod tests {
             })
             .send()?;
         assert_eq!(result.status(), 200, "Second user could not buy an item");
+
+        // Are user balances correct after buying
+        let result = client.get(format!("{URL}/api/user/info")).send()?;
+        let user: TestUserQuery = result.json()?;
+        assert_eq!(user.balance_cents, 333 - 250, "User has unexpected balance");
+
+        let result = client2.get(format!("{URL}/api/user/info")).send()?;
+        let user: TestUserQuery = result.json()?;
+        assert_eq!(user.balance_cents, 250 - 111 * 2, "User has unexpected balance");
 
         Ok(())
     }
