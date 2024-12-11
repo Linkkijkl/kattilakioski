@@ -1,6 +1,16 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
+    attachments (id) {
+        id -> Int4,
+        file_path -> Varchar,
+        thumbnail_path -> Varchar,
+        uploader_id -> Int4,
+        uploaded_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     items (id) {
         id -> Int4,
         title -> Varchar,
@@ -23,9 +33,11 @@ diesel::table! {
     }
 }
 
+diesel::joinable!(attachments -> users (uploader_id));
 diesel::joinable!(items -> users (seller_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
+    attachments,
     items,
     users,
 );
