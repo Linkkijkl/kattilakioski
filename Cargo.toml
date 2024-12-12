@@ -23,3 +23,4 @@ rand = "0.8"
 image = { version = "0.25", default-features = false }
 webp = "0.3"
 async-fs = "2.1"
+itertools = "0.13"

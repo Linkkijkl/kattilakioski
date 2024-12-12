@@ -9,6 +9,7 @@ use diesel::ExpressionMethods;
 use diesel_async::AsyncConnection;
 use diesel_async::RunQueryDsl;
 use futures::{try_join, AsyncWriteExt};
+use itertools::Itertools;
 use rand::Rng;
 use serde::Deserialize;
 use serde::Serialize;
@@ -291,6 +292,7 @@ struct NewItemQuery {
     description: String,
     amount: usize,
     price: String,
+    attachments: Vec<i32>,
 }
 
 // Parses string of form 1.23 to number like 123, see tests
@@ -313,7 +315,7 @@ pub async fn new_item(
     query: web::Json<NewItemQuery>,
     session: Session,
 ) -> Result<HttpResponse, Error> {
-    use crate::schema::{items, users};
+    use crate::schema::{attachments, items, users};
 
     // Limits
     const MAX_TITLE_LENGTH: usize = 50;
@@ -321,6 +323,7 @@ pub async fn new_item(
     const MAX_ITEM_AMOUNT: usize = 50;
     const MAX_PRICE_CENTS: usize = 15_00;
     const MIN_PRICE_CENTS: usize = 1;
+    const MAX_ATTACHMENTS: usize = 5;
 
     // Gather and validate input
 
@@ -359,10 +362,34 @@ pub async fn new_item(
     }
     let item_price_cents = item_price_cents as i32;
 
+    // Deduplicate attachments
+    let item_attachments: Vec<i32> = query.attachments.iter().unique().cloned().collect();
+
+    if item_attachments.len() > MAX_ATTACHMENTS {
+        return Err(error::ErrorBadRequest(format!("Amount of attachments can be at most {MAX_ATTACHMENTS}")));
+    }
+
     // Aquire db connection hande only when needed, to avoid aquiring it for no use on bad user input
     let mut con = pool.get().await.map_err(error::ErrorInternalServerError)?;
 
-    // Insert into db
+    // Validate that all referenced attachments exist and belong to user
+    let referenced_attachments = attachments::table
+        .select(Attachment::as_select())
+        .filter(attachments::columns::id.eq_any(&item_attachments))
+        .filter(attachments::columns::uploader_id.eq(&user_id))
+        .load(&mut con)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+    if referenced_attachments.len() != item_attachments.len() {
+        let missing_attachments = referenced_attachments
+            .iter()
+            .filter(|a| !item_attachments.contains(&a.id))
+            .map(|a| &a.id)
+            .join(", ");
+        return Err(error::ErrorBadRequest(format!("Following attachments could not be used, either because they don't exist or you don't own them: {missing_attachments}")));
+    }
+
+    // Insert item into db
     let item = diesel::insert_into(items::table)
         .values((
             items::columns::title.eq(item_title),
@@ -377,6 +404,14 @@ pub async fn new_item(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
+    // Reference attachments to item
+    let attachments = diesel::update(attachments::table)
+        .filter(attachments::columns::id.eq_any(item_attachments))
+        .set(attachments::columns::item_id.eq(item.id))
+        .get_results(&mut con)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
     // Add appropriate amount of cents to sellers balance
     diesel::update(users::table)
         .filter(users::columns::id.eq(user_id))
@@ -388,7 +423,7 @@ pub async fn new_item(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().json(item))
+    Ok(HttpResponse::Ok().json(ItemResult { attachments, item}))
 }
 
 #[derive(Serialize, Deserialize)]
@@ -753,6 +788,7 @@ mod tests {
                 description: "test description".to_string(),
                 amount: 3,
                 price: "1.11".to_string(),
+                attachments: Vec::new(),
             })
             .send()?;
         let item: Item = result.json()?;
@@ -765,10 +801,11 @@ mod tests {
                 description: "the best item description".to_string(),
                 amount: 1,
                 price: "2,5".to_string(),
+                attachments: Vec::new(),
             })
             .send()?;
         let item2: Item = result.json()?;
-        
+
         assert_eq!(
             item2.price_cents, 250,
             "Could not create new item for sale from second user"
