@@ -1,16 +1,22 @@
+use actix_multipart::form::tempfile::TempFile;
+use actix_multipart::form::{MultipartForm, MultipartFormConfig};
 use actix_session::Session;
+use actix_web::post;
 use actix_web::{error, get, web, Error, HttpResponse};
+use async_fs::File;
 use diesel::prelude::*;
 use diesel::ExpressionMethods;
 use diesel_async::AsyncConnection;
 use diesel_async::RunQueryDsl;
-use futures::try_join;
+use futures::{try_join, AsyncWriteExt};
+use rand::Rng;
 use serde::Deserialize;
 use serde::Serialize;
+use std::path::Path;
 use std::sync::LazyLock;
 
-use crate::models::Item;
 use crate::models::User;
+use crate::models::{Attachment, Item};
 use crate::BB8Pool;
 
 const LOGGED_IN_KEY: &str = "logged_in";
@@ -154,6 +160,7 @@ pub async fn user_info(pool: web::Data<BB8Pool>, session: Session) -> Result<Htt
 
 #[get("/debug/db/clear")]
 pub async fn clear_db(pool: web::Data<BB8Pool>) -> Result<HttpResponse, Error> {
+    use crate::schema::attachments::dsl::*;
     use crate::schema::items::dsl::*;
     use crate::schema::users::dsl::*;
 
@@ -168,6 +175,10 @@ pub async fn clear_db(pool: web::Data<BB8Pool>) -> Result<HttpResponse, Error> {
 
     // Remove everything ( in correct order! )
     diesel::delete(items)
+        .execute(&mut con)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+    diesel::delete(attachments)
         .execute(&mut con)
         .await
         .map_err(error::ErrorInternalServerError)?;
@@ -447,6 +458,108 @@ pub async fn buy_item(
     Ok(HttpResponse::Ok().body("OK"))
 }
 
+#[derive(Debug, MultipartForm)]
+struct UploadForm {
+    file: TempFile,
+}
+
+#[post("/attachment/upload")]
+pub async fn upload(
+    pool: web::Data<BB8Pool>,
+    session: Session,
+    MultipartForm(form): MultipartForm<UploadForm>,
+) -> Result<HttpResponse, Error> {
+    use crate::schema::attachments;
+
+    const PUBLIC_DIR: &str = "public"; // TODO: make configurable
+    const EXTENSIONS: [&str; 4] = ["jpg", "jpeg", "png", "webp"];
+    const RANDOM_FILE_NAME_LENGTH: usize = 20;
+    const MAX_IMAGE_RESOLUTION: u32 = 10_000;
+    const THUMBNAIL_QUALITY: f32 = 50.0;
+
+    let temp_file = form.file;
+
+    // Validate login
+    let user_id =
+        get_login_uid(&session)?.ok_or_else(|| error::ErrorUnauthorized("Not logged in"))?;
+
+    // Parse file extension
+    let file_name = temp_file
+        .file_name
+        .ok_or_else(|| error::ErrorBadRequest("No file name provided with file"))?;
+    let extension = Path::new(&file_name)
+        .extension()
+        .ok_or_else(|| error::ErrorBadRequest("File name does not contain file extension"))?
+        .to_string_lossy()
+        .into_owned();
+    if !EXTENSIONS.contains(&extension.as_str()) {
+        return Err(error::ErrorBadRequest(format!(
+            "Bad file extension. Accepted extensions are: {:?}",
+            EXTENSIONS
+        )));
+    }
+
+    // Generate new file name with path
+    let (file_path, thumbnail_path) = loop {
+        let id = rand::thread_rng()
+            .sample_iter(&rand::distributions::Alphanumeric)
+            .take(RANDOM_FILE_NAME_LENGTH)
+            .map(char::from)
+            .collect::<String>();
+        let path = format!("{PUBLIC_DIR}/{id}.{extension}");
+        if (File::open(&path).await).is_err() {
+            break (path, format!("{PUBLIC_DIR}/{id}.thumb.webp"));
+        }
+    };
+
+    // Prevent "zip bomb" images
+    let dimensions = image::image_dimensions(temp_file.file.path())
+        .map_err(|_| error::ErrorBadRequest(format!("Could not open {file_name}")))?;
+    if dimensions.0 > MAX_IMAGE_RESOLUTION || dimensions.1 > MAX_IMAGE_RESOLUTION {
+        return Err(error::ErrorBadRequest(format!(
+            "Maximum image resolution is {}x{}",
+            MAX_IMAGE_RESOLUTION, MAX_IMAGE_RESOLUTION
+        )));
+    }
+
+    // Generate and save thumbnail
+    let img = image::open(temp_file.file.path())
+        .map_err(|_| error::ErrorBadRequest(format!("Could not open {file_name}")))?;
+    let thumbnail = img.thumbnail(320, 320);
+    let thumbnail = image::DynamicImage::ImageRgba8(thumbnail.to_rgba8());
+    let thumbnail_bytes = webp::Encoder::from_image(&thumbnail).unwrap()
+        .encode(THUMBNAIL_QUALITY)
+        .to_vec();
+    File::create(&thumbnail_path)
+        .await
+        .map_err(error::ErrorInternalServerError)?
+        .write_all(&thumbnail_bytes)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    // Persist provided image file when everything above has passed without errors
+    temp_file.file.persist(&file_path).map_err(error::ErrorInternalServerError)?;
+
+    // Index thumbnail to db
+    let mut con = pool.get().await.map_err(error::ErrorInternalServerError)?;
+    let attachment = diesel::insert_into(attachments::table)
+        .values((
+            attachments::columns::file_path.eq(file_path),
+            attachments::columns::thumbnail_path.eq(thumbnail_path),
+            attachments::columns::uploader_id.eq(user_id),
+            attachments::columns::uploaded_at.eq(chrono::offset::Utc::now()),
+        ))
+        .returning(Attachment::as_returning())
+        .get_result(&mut con)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    // Return info of newly created attachment
+    Ok(HttpResponse::Ok().json(attachment))
+}
+
+
+/// Service config for the whole api
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/api")
@@ -458,7 +571,13 @@ pub fn config(cfg: &mut web::ServiceConfig) {
             .service(clear_db)
             .service(get_items)
             .service(new_item)
-            .service(buy_item),
+            .service(buy_item)
+            .app_data(
+                MultipartFormConfig::default()
+                    .total_limit(10 * 1024 * 1024 /* 10Mb */)
+                    .memory_limit(256 /* allow almost no memory usage */),
+            )
+            .service(upload),
     );
 }
 
@@ -667,7 +786,7 @@ mod tests {
             .send()?;
         let items: Vec<Item> = result.json()?;
         println!("{:?}", items);
-        let got_item = items.get(0).unwrap();
+        let got_item = &items[0];
         assert_eq!(*got_item, item2);
 
         // Item buying
@@ -696,7 +815,11 @@ mod tests {
 
         let result = client2.get(format!("{URL}/api/user/info")).send()?;
         let user: TestUserQuery = result.json()?;
-        assert_eq!(user.balance_cents, 250 - 111 * 2, "User has unexpected balance");
+        assert_eq!(
+            user.balance_cents,
+            250 - 111 * 2,
+            "User has unexpected balance"
+        );
 
         Ok(())
     }
