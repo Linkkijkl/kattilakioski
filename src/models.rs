@@ -31,6 +31,7 @@ pub struct Item {
 
 #[derive(Queryable, Selectable, Identifiable, Associations, Debug, PartialEq)]
 #[diesel(belongs_to(User, foreign_key = uploader_id))]
+#[diesel(belongs_to(Item, foreign_key = item_id))]
 #[diesel(table_name = crate::schema::attachments)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 #[derive(Serialize, Deserialize)]
@@ -38,6 +39,7 @@ pub struct Attachment {
     pub id: i32,
     pub file_path: String,
     pub thumbnail_path: String,
+    pub item_id: Option<i32>,
     pub uploader_id: i32,
     pub uploaded_at: chrono::DateTime<chrono::Local>,
 }

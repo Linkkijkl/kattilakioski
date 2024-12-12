@@ -5,6 +5,7 @@ diesel::table! {
         id -> Int4,
         file_path -> Varchar,
         thumbnail_path -> Varchar,
+        item_id -> Nullable<Int4>,
         uploader_id -> Int4,
         uploaded_at -> Timestamptz,
     }
@@ -33,6 +34,7 @@ diesel::table! {
     }
 }
 
+diesel::joinable!(attachments -> items (item_id));
 diesel::joinable!(attachments -> users (uploader_id));
 diesel::joinable!(items -> users (seller_id));
 

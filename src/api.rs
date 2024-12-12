@@ -197,6 +197,13 @@ struct ItemQuery {
     limit: Option<i64>,
 }
 
+#[derive(Serialize, Deserialize)]
+struct ItemResult {
+    #[serde(flatten)]
+    item: Item,
+    attachments: Vec<Attachment>,
+}
+
 #[get("/item/list")]
 pub async fn get_items(
     pool: web::Data<BB8Pool>,
@@ -256,14 +263,26 @@ pub async fn get_items(
     }
 
     // Query db and return results
-    let result = db_query
+    let item_result = db_query
         .offset(offset)
         .limit(limit)
         .select(Item::as_select())
         .load(&mut con)
         .await
         .map_err(error::ErrorInternalServerError)?;
-    Ok(HttpResponse::Ok().json(result))
+    let attachments_result = Attachment::belonging_to(&item_result)
+        .select(Attachment::as_select())
+        .load(&mut con)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+    let attachments_per_item = attachments_result
+        .grouped_by(&item_result)
+        .into_iter()
+        .zip(item_result)
+        .map(|(attachments, item)| ItemResult { item, attachments })
+        .collect::<Vec<ItemResult>>();
+
+    Ok(HttpResponse::Ok().json(attachments_per_item))
 }
 
 #[derive(Serialize, Deserialize)]
@@ -527,7 +546,8 @@ pub async fn upload(
         .map_err(|_| error::ErrorBadRequest(format!("Could not open {file_name}")))?;
     let thumbnail = img.thumbnail(320, 320);
     let thumbnail = image::DynamicImage::ImageRgba8(thumbnail.to_rgba8());
-    let thumbnail_bytes = webp::Encoder::from_image(&thumbnail).unwrap()
+    let thumbnail_bytes = webp::Encoder::from_image(&thumbnail)
+        .unwrap()
         .encode(THUMBNAIL_QUALITY)
         .to_vec();
     File::create(&thumbnail_path)
@@ -538,7 +558,10 @@ pub async fn upload(
         .map_err(error::ErrorInternalServerError)?;
 
     // Persist provided image file when everything above has passed without errors
-    temp_file.file.persist(&file_path).map_err(error::ErrorInternalServerError)?;
+    temp_file
+        .file
+        .persist(&file_path)
+        .map_err(error::ErrorInternalServerError)?;
 
     // Index thumbnail to db
     let mut con = pool.get().await.map_err(error::ErrorInternalServerError)?;
@@ -557,7 +580,6 @@ pub async fn upload(
     // Return info of newly created attachment
     Ok(HttpResponse::Ok().json(attachment))
 }
-
 
 /// Service config for the whole api
 pub fn config(cfg: &mut web::ServiceConfig) {
@@ -746,7 +768,7 @@ mod tests {
             })
             .send()?;
         let item2: Item = result.json()?;
-
+        
         assert_eq!(
             item2.price_cents, 250,
             "Could not create new item for sale from second user"
@@ -785,7 +807,6 @@ mod tests {
             })
             .send()?;
         let items: Vec<Item> = result.json()?;
-        println!("{:?}", items);
         let got_item = &items[0];
         assert_eq!(*got_item, item2);
 
