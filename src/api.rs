@@ -580,7 +580,6 @@ pub async fn upload(
     let img = image::open(temp_file.file.path())
         .map_err(|_| error::ErrorBadRequest(format!("Could not open {file_name}")))?;
     let thumbnail = img.thumbnail(320, 320);
-    let thumbnail = image::DynamicImage::ImageRgba8(thumbnail.to_rgba8());
     let thumbnail_bytes = webp::Encoder::from_image(&thumbnail)
         .unwrap()
         .encode(THUMBNAIL_QUALITY)

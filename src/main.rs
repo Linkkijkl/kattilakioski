@@ -53,6 +53,16 @@ async fn main() -> std::io::Result<()> {
             )
         })?;
 
+    // Bind terminating signals to set flag true
+    let stop_flag = Arc::new(AtomicBool::new(false));
+    for signal in TERM_SIGNALS {
+        let _ = flag::register(*signal, Arc::clone(&stop_flag));
+    }
+
+    // Spawn cron task
+    let cron = tokio::task::spawn(cron::start(Arc::clone(&stop_flag), diesel_connection_pool.clone()));
+
+    // Spawn actix server task
     let actix = tokio::task::spawn(
         HttpServer::new(move || {
             let cookie_middleware = SessionMiddleware::builder(
@@ -61,7 +71,7 @@ async fn main() -> std::io::Result<()> {
             )
             .session_lifecycle(PersistentSession::default().session_ttl(COOKIE_TTL))
             .cookie_content_security(CookieContentSecurity::Private)
-            // Don't use secure cookies in debug builds as they require ssl
+            // Don't use secure cookies in debug builds as they require use of https, which would complicate testing
             .cookie_secure(!cfg!(debug_assertions))
             .build();
             let headers_middleware =
@@ -79,15 +89,6 @@ async fn main() -> std::io::Result<()> {
         .bind(("0.0.0.0", 3030))?
         .run(),
     );
-
-    // Bind terminating signals to set `stop` true
-    let stop = Arc::new(AtomicBool::new(false));
-    for signal in TERM_SIGNALS {
-        let _ = flag::register(*signal, Arc::clone(&stop));
-    }
-
-    // Spawn cron task
-    let cron = tokio::task::spawn(cron::start(Arc::clone(&stop)));
 
     // Wait for terminating signals
     let mut signals = Signals::new(TERM_SIGNALS)?;
