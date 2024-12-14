@@ -5,6 +5,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tokio::time::{self, Duration};
 
+use crate::models::Attachment;
 use crate::BB8Pool;
 
 const CRON_FREQUENCY: usize = 10;
@@ -39,7 +40,7 @@ async fn cron(pool: BB8Pool) -> Result<(), String> {
     let now = chrono::offset::Utc::now();
     let oldest_accepted_timestamp = now - Duration::from_secs(DANGLING_ATTACHMENT_TIMEOUT);
 
-    let removed_amount = diesel_async::RunQueryDsl::execute(
+    let removed_db_rows: Vec<Attachment> = diesel_async::RunQueryDsl::get_results(
         diesel::delete(attachments)
             .filter(item_id.is_null())
             .filter(uploaded_at.lt(oldest_accepted_timestamp)),
@@ -48,8 +49,18 @@ async fn cron(pool: BB8Pool) -> Result<(), String> {
     .await
     .map_err(|s| s.to_string())?;
 
+    // Remove associated files
+    for row in &removed_db_rows {
+        for attachment_file in [&row.file_path, &row.thumbnail_path] {
+            async_fs::remove_file(attachment_file)
+                .await
+                .map_err(|s| s.to_string())?;
+        }
+    }
+
+    let removed_amount = removed_db_rows.len();
     if removed_amount > 0 {
-        info!("Removed {removed_amount} attachments without items");
+        info!("Cleaned {removed_amount} attachments without associated items");
     }
 
     Ok(())
