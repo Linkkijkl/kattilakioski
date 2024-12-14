@@ -9,6 +9,7 @@ use diesel::ExpressionMethods;
 use diesel_async::AsyncConnection;
 use diesel_async::RunQueryDsl;
 use futures::{try_join, AsyncWriteExt};
+use image::{ImageReader, Limits};
 use itertools::Itertools;
 use rand::Rng;
 use serde::Deserialize;
@@ -296,16 +297,20 @@ struct NewItemQuery {
 }
 
 // Parses string of form 1.23 to number like 123, see tests
-fn parse_decimal_to_cents(string: String) -> Result<usize, ()> {
+fn parse_decimal_to_cents(string: String) -> Result<u32, ()> {
     let split: Vec<&str> = string.split(['.', ',']).collect();
     let flattened = split.concat();
     let splits = split.len();
     if (splits >= 2 && split[1].len() > 2) || !flattened.chars().all(char::is_numeric) {
         return Err(());
     }
-    let exp = if splits < 2 { 2 } else { 2 - split[1].len() };
-    let mult = 10_usize.pow(exp as u32);
-    let cents = flattened.parse::<usize>().map_err(|_| ())? * mult;
+    let exp = if splits < 2 {
+        2
+    } else {
+        2 - split[1].len() as u32
+    };
+    let mult = 10_u32.pow(exp);
+    let cents = flattened.parse::<u32>().map_err(|_| ())? * mult;
     Ok(cents)
 }
 
@@ -321,8 +326,8 @@ pub async fn new_item(
     const MAX_TITLE_LENGTH: usize = 50;
     const MAX_DESCRIPTION_LENGTH: usize = 500;
     const MAX_ITEM_AMOUNT: usize = 50;
-    const MAX_PRICE_CENTS: usize = 15_00;
-    const MIN_PRICE_CENTS: usize = 1;
+    const MAX_PRICE_CENTS: u32 = 15_00;
+    const MIN_PRICE_CENTS: u32 = 1;
     const MAX_ATTACHMENTS: usize = 5;
 
     // Gather and validate input
@@ -355,7 +360,7 @@ pub async fn new_item(
     let item_price_cents = parse_decimal_to_cents(query.price.clone()).map_err(|_| {
         error::ErrorBadRequest("Price must be in decimal format with cents, i.e 9.95")
     })?;
-    if !(MIN_PRICE_CENTS..MAX_PRICE_CENTS).contains(&item_price_cents) {
+    if !(MIN_PRICE_CENTS..=MAX_PRICE_CENTS).contains(&item_price_cents) {
         return Err(error::ErrorBadRequest(format!(
             "Price must be at least {MIN_PRICE_CENTS} cents and at most {MAX_PRICE_CENTS} cents"
         )));
@@ -366,7 +371,9 @@ pub async fn new_item(
     let item_attachments: Vec<i32> = query.attachments.iter().unique().cloned().collect();
 
     if item_attachments.len() > MAX_ATTACHMENTS {
-        return Err(error::ErrorBadRequest(format!("Amount of attachments can be at most {MAX_ATTACHMENTS}")));
+        return Err(error::ErrorBadRequest(format!(
+            "Amount of attachments can be at most {MAX_ATTACHMENTS}"
+        )));
     }
 
     // Aquire db connection hande only when needed, to avoid aquiring it for no use on bad user input
@@ -423,7 +430,7 @@ pub async fn new_item(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().json(ItemResult { attachments, item}))
+    Ok(HttpResponse::Ok().json(ItemResult { attachments, item }))
 }
 
 #[derive(Serialize, Deserialize)]
@@ -529,6 +536,7 @@ pub async fn upload(
     const EXTENSIONS: [&str; 4] = ["jpg", "jpeg", "png", "webp"];
     const RANDOM_FILE_NAME_LENGTH: usize = 20;
     const MAX_IMAGE_RESOLUTION: u32 = 10_000;
+    const THUMBNAIL_SIZE: u32 = 320;
     const THUMBNAIL_QUALITY: f32 = 50.0;
 
     let temp_file = form.file;
@@ -566,20 +574,24 @@ pub async fn upload(
         }
     };
 
-    // Prevent "zip bomb" images
-    let dimensions = image::image_dimensions(temp_file.file.path())
-        .map_err(|_| error::ErrorBadRequest(format!("Could not open {file_name}")))?;
-    if dimensions.0 > MAX_IMAGE_RESOLUTION || dimensions.1 > MAX_IMAGE_RESOLUTION {
-        return Err(error::ErrorBadRequest(format!(
-            "Maximum image resolution is {}x{}",
-            MAX_IMAGE_RESOLUTION, MAX_IMAGE_RESOLUTION
-        )));
-    }
+    // Prevent loading "zip bomb" images before the image is decoded in memory
+    let mut decoder = ImageReader::open(temp_file.file.path())
+        .map_err(error::ErrorInternalServerError)?
+        .with_guessed_format()
+        .map_err(error::ErrorInternalServerError)?;
+    let mut limits = Limits::default();
+    limits.max_alloc = Some(512 * 1024 * 1024); /* 512 MiB */
+    limits.max_image_height = Some(MAX_IMAGE_RESOLUTION);
+    limits.max_image_width = Some(MAX_IMAGE_RESOLUTION);
+    decoder.limits(limits);
 
-    // Generate and save thumbnail
-    let img = image::open(temp_file.file.path())
-        .map_err(|_| error::ErrorBadRequest(format!("Could not open {file_name}")))?;
-    let thumbnail = img.thumbnail(320, 320);
+    // Generate thumbnail for image
+    let img = decoder.decode().map_err(|_| {
+        error::ErrorBadRequest(format!(
+            "Could not decode {file_name}. Uploaded image might be too large or corrupted."
+        ))
+    })?;
+    let thumbnail = img.thumbnail(THUMBNAIL_SIZE, THUMBNAIL_SIZE);
     let thumbnail_bytes = webp::Encoder::from_image(&thumbnail)
         .unwrap()
         .encode(THUMBNAIL_QUALITY)
@@ -592,12 +604,11 @@ pub async fn upload(
         .map_err(error::ErrorInternalServerError)?;
 
     // Persist provided image file when everything above has passed without errors
-    temp_file
-        .file
-        .persist(&file_path)
+    async_fs::copy(temp_file.file.path(), &file_path)
+        .await
         .map_err(error::ErrorInternalServerError)?;
 
-    // Index thumbnail to db
+    // Index image to db
     let mut con = pool.get().await.map_err(error::ErrorInternalServerError)?;
     let attachment = diesel::insert_into(attachments::table)
         .values((
@@ -630,8 +641,8 @@ pub fn config(cfg: &mut web::ServiceConfig) {
             .service(buy_item)
             .app_data(
                 MultipartFormConfig::default()
-                    .total_limit(10 * 1024 * 1024 /* 10Mb */)
-                    .memory_limit(256 /* allow almost no memory usage */),
+                    .total_limit(10 * 1024 * 1024 /* 10MiB */)
+                    .memory_limit(256 /* allow for almost no memory usage */),
             )
             .service(upload),
     );
@@ -642,7 +653,10 @@ mod tests {
 
     use std::sync::Arc;
 
+    use image::ImageBuffer;
+    use rand::random;
     use reqwest::Result;
+    use temp_dir::TempDir;
 
     use super::*;
     const URL: &str = "http://backend:3030";
@@ -673,7 +687,7 @@ mod tests {
     // Test account operations
     #[test]
     fn account_operations() -> Result<()> {
-        // Set variables and objects up for testing
+        // Set things up for testing
         let cookie_provider = Arc::new(reqwest::cookie::Jar::default());
         let client = reqwest::blocking::ClientBuilder::new()
             .cookie_provider(cookie_provider.clone())
@@ -720,7 +734,7 @@ mod tests {
         let result = client.get(format!("{URL}/api/user/logout")).send()?;
         assert_eq!(result.status(), 200, "Could not log out");
 
-        // Get user info without a session
+        // Get user info without a valid session
         let result = client.get(format!("{URL}/api/user/info")).send()?;
         assert_ne!(
             result.status(),
@@ -728,7 +742,7 @@ mod tests {
             "User info returned wrong status without valid session"
         );
 
-        // Log out without a session
+        // Log out without a valid session
         let result = client.get(format!("{URL}/api/user/logout")).send()?;
         assert_ne!(
             result.status(),
@@ -742,7 +756,7 @@ mod tests {
     // Test selling and buying
     #[test]
     fn item_operations() -> Result<()> {
-        // Set variables and objects up for testing
+        // Set things up for testing
         let cookie_provider = Arc::new(reqwest::cookie::Jar::default());
         let client = reqwest::blocking::ClientBuilder::new()
             .cookie_provider(cookie_provider.clone())
@@ -812,7 +826,7 @@ mod tests {
 
         #[derive(Deserialize)]
         struct TestUserQuery {
-            balance_cents: usize,
+            balance_cents: u32,
         }
 
         // Test user balances
@@ -876,6 +890,87 @@ mod tests {
             user.balance_cents,
             250 - 111 * 2,
             "User has unexpected balance"
+        );
+
+        Ok(())
+    }
+
+    // Test attachment uploading
+    #[test]
+    fn attachment_operations() -> Result<()> {
+        // Set things up for testing
+        let cookie_provider = Arc::new(reqwest::cookie::Jar::default());
+        let client = reqwest::blocking::ClientBuilder::new()
+            .cookie_provider(cookie_provider.clone())
+            .build()?;
+        let cookie_provider2 = Arc::new(reqwest::cookie::Jar::default());
+        let client2 = reqwest::blocking::ClientBuilder::new()
+            .cookie_provider(cookie_provider2.clone())
+            .build()?;
+        let temp_dir = TempDir::new().unwrap();
+
+        // Generate test images
+        let random_image_generator = || {
+            ImageBuffer::from_fn(512, 512, |_, _| {
+                let a = || random::<u8>() % 255_u8;
+                image::Rgb([a(), a(), a()])
+            })
+        };
+        let image = random_image_generator();
+        let attachment_path = temp_dir.child("test_image.png");
+        image.save(&attachment_path).unwrap();
+        let image2 = random_image_generator();
+        let attachment_path2 = temp_dir.child("test_image_2.jpg");
+        image2.save(&attachment_path2).unwrap();
+
+        // Clear database for testing
+        let result = client.get(format!("{URL}/api/debug/db/clear")).send()?;
+        assert_eq!(
+            result.status(),
+            200,
+            "Could not clear db. Make sure the server is compiled in debug mode."
+        );
+
+        // Register test users and log them in to their clients
+        let result = client
+            .get(format!("{URL}/api/user/new"))
+            .json(&UserQuery {
+                username: "test".to_string(),
+                password: "test".to_string(),
+            })
+            .send()?;
+        assert_eq!(result.status(), 200, "Could not create a new user");
+
+        let result = client2
+            .get(format!("{URL}/api/user/new"))
+            .json(&UserQuery {
+                username: "test2".to_string(),
+                password: "test".to_string(),
+            })
+            .send()?;
+        assert_eq!(result.status(), 200, "Could not create a second user");
+
+        // Upload attachments
+        let form = reqwest::blocking::multipart::Form::new()
+            .file("file", attachment_path)
+            .unwrap();
+        let result = client
+            .post(format!("{URL}/api/attachment/upload"))
+            .multipart(form)
+            .send()?;
+        assert_eq!(result.status(), 200, "Could not upload attachment");
+
+        let form2 = reqwest::blocking::multipart::Form::new()
+            .file("file", attachment_path2)
+            .unwrap();
+        let result = client
+            .post(format!("{URL}/api/attachment/upload"))
+            .multipart(form2)
+            .send()?;
+        assert_eq!(
+            result.status(),
+            200,
+            "Could not upload attachment for second user"
         );
 
         Ok(())
