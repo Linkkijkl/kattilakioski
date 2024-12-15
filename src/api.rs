@@ -176,11 +176,11 @@ pub async fn clear_db(pool: web::Data<BB8Pool>) -> Result<HttpResponse, Error> {
     let mut con = pool.get().await.map_err(error::ErrorInternalServerError)?;
 
     // Remove everything ( in correct order! )
-    diesel::delete(items)
+    diesel::delete(attachments)
         .execute(&mut con)
         .await
         .map_err(error::ErrorInternalServerError)?;
-    diesel::delete(attachments)
+    diesel::delete(items)
         .execute(&mut con)
         .await
         .map_err(error::ErrorInternalServerError)?;
@@ -379,11 +379,12 @@ pub async fn new_item(
     // Aquire db connection hande only when needed, to avoid aquiring it for no use on bad user input
     let mut con = pool.get().await.map_err(error::ErrorInternalServerError)?;
 
-    // Validate that all referenced attachments exist and belong to user
+    // Validate that all referenced attachments
     let referenced_attachments = attachments::table
         .select(Attachment::as_select())
         .filter(attachments::columns::id.eq_any(&item_attachments))
-        .filter(attachments::columns::uploader_id.eq(&user_id))
+        .filter(attachments::columns::uploader_id.eq(&user_id)) // Validate ownership
+        .filter(attachments::columns::item_id.is_null()) // Validate that attachment is not already bound to an item
         .load(&mut con)
         .await
         .map_err(error::ErrorInternalServerError)?;
@@ -393,7 +394,7 @@ pub async fn new_item(
             .filter(|a| !item_attachments.contains(&a.id))
             .map(|a| &a.id)
             .join(", ");
-        return Err(error::ErrorBadRequest(format!("Following attachments could not be used, either because they don't exist or you don't own them: {missing_attachments}")));
+        return Err(error::ErrorBadRequest(format!("Following attachments could not be used: {missing_attachments}. Try to uploading them again.")));
     }
 
     // Insert item into db
@@ -959,11 +960,12 @@ mod tests {
             .multipart(form)
             .send()?;
         assert_eq!(result.status(), 200, "Could not upload attachment");
+        let attachment_id = result.json::<Attachment>().unwrap().id;
 
         let form2 = reqwest::blocking::multipart::Form::new()
             .file("file", attachment_path2)
             .unwrap();
-        let result = client
+        let result = client2
             .post(format!("{URL}/api/attachment/upload"))
             .multipart(form2)
             .send()?;
@@ -972,7 +974,47 @@ mod tests {
             200,
             "Could not upload attachment for second user"
         );
+        let attachment_id2 = result.json::<Attachment>().unwrap().id;
 
+        // Sell an item with uploaded attachment
+        let result = client
+            .get(format!("{URL}/api/item/new"))
+            .json(&NewItemQuery {
+                title: "test item".to_string(),
+                description: "test description".to_string(),
+                amount: 3,
+                price: "1.11".to_string(),
+                attachments: vec![attachment_id],
+            })
+            .send()?;
+        assert_eq!(result.status(), 200, "Could not create new item with attachment");
+
+        // Try to sell an item with attachment beloning to another user
+        let result = client
+            .get(format!("{URL}/api/item/new"))
+            .json(&NewItemQuery {
+                title: "test item".to_string(),
+                description: "test description".to_string(),
+                amount: 1,
+                price: "1,00".to_string(),
+                attachments: vec![attachment_id2],
+            })
+            .send()?;
+        assert_ne!(result.status(), 200, "Could use attachment which is not owned");
+
+        // Try to re-use attachment
+        let result = client
+            .get(format!("{URL}/api/item/new"))
+            .json(&NewItemQuery {
+                title: "test item".to_string(),
+                description: "test description".to_string(),
+                amount: 3,
+                price: "1.11".to_string(),
+                attachments: vec![attachment_id],
+            })
+            .send()?;
+        assert_ne!(result.status(), 200, "Could use the same attachment in 2 different items");
+        
         Ok(())
     }
 }
