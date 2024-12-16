@@ -24,6 +24,16 @@ diesel::table! {
 }
 
 diesel::table! {
+    transactions (id) {
+        id -> Int4,
+        item_id -> Int4,
+        buyer_id -> Int4,
+        item_amount -> Int4,
+        transacted_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     users (id) {
         id -> Int4,
         username -> Varchar,
@@ -37,9 +47,12 @@ diesel::table! {
 diesel::joinable!(attachments -> items (item_id));
 diesel::joinable!(attachments -> users (uploader_id));
 diesel::joinable!(items -> users (seller_id));
+diesel::joinable!(transactions -> items (item_id));
+diesel::joinable!(transactions -> users (buyer_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     attachments,
     items,
+    transactions,
     users,
 );

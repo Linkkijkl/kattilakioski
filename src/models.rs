@@ -43,3 +43,17 @@ pub struct Attachment {
     pub uploader_id: i32,
     pub uploaded_at: chrono::DateTime<chrono::Local>,
 }
+
+#[derive(Queryable, Selectable, Identifiable, Associations, Debug, PartialEq)]
+#[diesel(belongs_to(Item, foreign_key = item_id))]
+#[diesel(belongs_to(User, foreign_key = buyer_id))]
+#[diesel(table_name = crate::schema::transactions)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+#[derive(Serialize, Deserialize)]
+pub struct Transaction {
+    pub id: i32,
+    pub item_id: i32,
+    pub buyer_id: i32,
+    pub item_amount: i32,
+    pub transacted_at: chrono::DateTime<chrono::Local>,
+}
