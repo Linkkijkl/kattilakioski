@@ -8,6 +8,8 @@ use actix_web::{middleware, web, App, HttpServer};
 use async_fs::DirBuilder;
 use diesel_async::pooled_connection::bb8::Pool;
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
+use diesel_migrations::{embed_migrations, EmbeddedMigrations};
+use diesel::pg::PgConnection;
 use futures_util::StreamExt;
 use signal_hook::consts::{SIGINT, SIGQUIT, SIGTERM, TERM_SIGNALS};
 use signal_hook::flag;
@@ -15,6 +17,8 @@ use signal_hook_tokio::Signals;
 use std::io::ErrorKind;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
+use diesel_migrations::MigrationHarness;
+use diesel::Connection;
 
 pub type BB8Pool = Pool<diesel_async::AsyncPgConnection>;
 
@@ -23,8 +27,16 @@ mod cron;
 mod models;
 mod schema;
 
+/// Run database migrations
+fn run_migrations(db_url: &str) {
+    // Running migrations async proved to be really hard, so lets just do it sync
+    const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
+    let mut connection = PgConnection::establish(db_url).expect("Could not connect to database");
+    connection.run_pending_migrations(MIGRATIONS).expect("Could not run database migrations");
+}
+
 #[actix_web::main]
-async fn main() -> std::io::Result<()> {
+async fn main() -> std::io::Result<()> { // TODO: Rework main function error handling
     // TODO: More secure logging
     pretty_env_logger::init();
 
@@ -37,12 +49,14 @@ async fn main() -> std::io::Result<()> {
     let cookie_secret_key = Key::derive_from(secret_key_str.as_bytes());
     const COOKIE_TTL: Duration = Duration::days(7);
 
+    // Run pending db migrations
+    let db_url = std::env::var("DATABASE_URL")
+        .unwrap_or("postgres://postgres:mysecretpassword@postgres".to_string());
+    run_migrations(&db_url);
+
     // Initiate db connection pool
     let diesel_connection_manager =
-        AsyncDieselConnectionManager::<diesel_async::AsyncPgConnection>::new(
-            std::env::var("DATABASE_URL")
-                .unwrap_or("postgres://postgres:mysecretpassword@postgres".to_string()),
-        );
+        AsyncDieselConnectionManager::<diesel_async::AsyncPgConnection>::new(&db_url);
     let diesel_connection_pool: BB8Pool = Pool::builder()
         .build(diesel_connection_manager)
         .await

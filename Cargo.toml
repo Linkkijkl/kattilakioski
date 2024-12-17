@@ -10,8 +10,9 @@ actix-web = "4.9"
 actix-files = "0.6"
 actix-session = { version = "0.10", features = ["cookie-session"] }
 actix-multipart = "0.7"
-diesel = { version = "2.2", features = ["chrono"] }
+diesel = { version = "2.2", features = ["chrono", "postgres"] }
 diesel-async = { version = "0.5", features = ["pool", "bb8", "postgres"] }
+diesel_migrations = "2.2"
 pretty_env_logger = "0.5"
 chrono = { version = "0.4", features = ["serde"] }
 serde = { version = "1.0", features = ["derive"] }
