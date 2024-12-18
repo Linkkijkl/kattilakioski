@@ -44,7 +44,13 @@ fn set_login_uid(session: &Session, uid: i32) -> Result<(), Error> {
 // Get salt from environment on first access
 static SALT: LazyLock<String> = LazyLock::new(|| match std::env::var("SALT") {
     Ok(val) => val,
-    Err(_) => "defaultsalt".to_string(),
+    Err(_) => {
+        // Allow use of development values only in debug builds
+        if !cfg!(debug_assertions) {
+            panic!("Environment variable SALT not set! Password salt is required for security.");
+        }
+        "defaultsalt".to_string()
+    }
 });
 
 // Hash password with salt
@@ -987,7 +993,11 @@ mod tests {
                 attachments: vec![attachment_id],
             })
             .send()?;
-        assert_eq!(result.status(), 200, "Could not create new item with attachment");
+        assert_eq!(
+            result.status(),
+            200,
+            "Could not create new item with attachment"
+        );
 
         // Try to sell an item with attachment beloning to another user
         let result = client
@@ -1000,7 +1010,11 @@ mod tests {
                 attachments: vec![attachment_id2],
             })
             .send()?;
-        assert_ne!(result.status(), 200, "Could use attachment which is not owned");
+        assert_ne!(
+            result.status(),
+            200,
+            "Could use attachment which is not owned"
+        );
 
         // Try to re-use attachment
         let result = client
@@ -1013,8 +1027,12 @@ mod tests {
                 attachments: vec![attachment_id],
             })
             .send()?;
-        assert_ne!(result.status(), 200, "Could use the same attachment in 2 different items");
-        
+        assert_ne!(
+            result.status(),
+            200,
+            "Could use the same attachment in 2 different items"
+        );
+
         Ok(())
     }
 }

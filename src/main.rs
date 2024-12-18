@@ -36,7 +36,7 @@ fn run_migrations(db_url: &str) {
 }
 
 #[actix_web::main]
-async fn main() -> std::io::Result<()> { // TODO: Rework main function error handling
+async fn main() -> std::io::Result<()> {
     // TODO: More secure logging
     pretty_env_logger::init();
 
@@ -45,7 +45,13 @@ async fn main() -> std::io::Result<()> { // TODO: Rework main function error han
 
     // Cookie session middleware vars
     let secret_key_str = std::env::var("SESSION_SECRET")
-        .unwrap_or("sessionsecretsecretsecretsecretsecret".to_string());
+        .unwrap_or_else(|_| {
+            // Allow use of development values only in debug builds
+            if !cfg!(debug_assertions) {
+                panic!("Environment variable SESSION_SECRET not set! Session secret is used for cookie cryptography and is mandatory for security.");
+            }
+            "sessionsecretsecretsecretsecretsecret".to_string()
+        });
     let cookie_secret_key = Key::derive_from(secret_key_str.as_bytes());
     const COOKIE_TTL: Duration = Duration::days(7);
 
@@ -56,7 +62,10 @@ async fn main() -> std::io::Result<()> { // TODO: Rework main function error han
 
     // Initiate db connection pool
     let diesel_connection_manager =
-        AsyncDieselConnectionManager::<diesel_async::AsyncPgConnection>::new(&db_url);
+        AsyncDieselConnectionManager::<diesel_async::AsyncPgConnection>::new(
+            std::env::var("DATABASE_URL")
+                .unwrap_or("postgres://postgres:mysecretpassword@postgres".to_string()),
+        );
     let diesel_connection_pool: BB8Pool = Pool::builder()
         .build(diesel_connection_manager)
         .await
@@ -74,7 +83,10 @@ async fn main() -> std::io::Result<()> { // TODO: Rework main function error han
     }
 
     // Spawn cron task
-    let cron = tokio::task::spawn(cron::start(Arc::clone(&stop_flag), diesel_connection_pool.clone()));
+    let cron = tokio::task::spawn(cron::start(
+        Arc::clone(&stop_flag),
+        diesel_connection_pool.clone(),
+    ));
 
     // Spawn actix server task
     let actix = tokio::task::spawn(
@@ -98,7 +110,7 @@ async fn main() -> std::io::Result<()> { // TODO: Rework main function error han
                 .wrap(cookie_middleware)
                 .wrap(logger_middleware)
                 .configure(api::config)
-                .service(Files::new("/", "public").index_file("index.html"))
+                .service(Files::new("/", "dist").index_file("index.html"))
         })
         .bind(("0.0.0.0", 3030))?
         .run(),

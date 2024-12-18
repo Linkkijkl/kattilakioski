@@ -1,0 +1,13 @@
+{
+    "name": "kattilakioski",
+    "version": "1.0.0",
+    "description": "Communal kiosk",
+    "main": "index.js",
+    "repository": "https://github.com/linkkijkl/kattilakioski",
+    "author": "Linkki Jyväskylä ry <pj@linkkijkl.fi>",
+    "license": "MIT",
+    "private": true,
+    "devDependencies": {
+        "vite": "6.0"
+    }
+}

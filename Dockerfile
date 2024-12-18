@@ -1,3 +1,5 @@
+# ----- BUILD BACKEND -----
+
 # Dockerfile for creating a statically-linked Rust application using docker's
 # multi-stage build feature. This also leverages the docker build cache to avoid
 # re-downloading dependencies if they have not changed.
@@ -23,10 +25,18 @@ RUN cargo chef cook --release --target x86_64-unknown-linux-musl --recipe-path r
 COPY . .
 RUN cargo build --release --target x86_64-unknown-linux-musl --bin kattilakioski
 
+# ----- BUILD FRONTEND -----
+
+RUN apk add --no-cache nodejs npm
+RUN npm install --global yarn vite
+RUN yarn install
+RUN vite build
+
+# ----- FINAL CONTAINER ----- 
 # Copy the statically-linked binary into a scratch container
 FROM scratch AS runtime
 WORKDIR /app
 COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/kattilakioski /usr/local/bin/kattilakioski
-COPY public public
+COPY --from=builder /app/dist /usr/local/bin/dist
 USER 1000
 CMD [ "/usr/local/bin/kattilakioski" ]

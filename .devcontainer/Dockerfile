@@ -20,3 +20,7 @@ RUN rustup component add rustfmt
 
 # Install postgres cli
 RUN apt-get install -y postgresql-client
+
+# Install node and yarn
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt install nodejs -y
+RUN npm install --global yarn vite
