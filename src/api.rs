@@ -170,6 +170,7 @@ pub async fn user_info(pool: web::Data<BB8Pool>, session: Session) -> Result<Htt
 pub async fn clear_db(pool: web::Data<BB8Pool>) -> Result<HttpResponse, Error> {
     use crate::schema::attachments::dsl::*;
     use crate::schema::items::dsl::*;
+    use crate::schema::transactions::dsl::*;
     use crate::schema::users::dsl::*;
 
     // Prevent access when not running a debug build
@@ -182,10 +183,11 @@ pub async fn clear_db(pool: web::Data<BB8Pool>) -> Result<HttpResponse, Error> {
     let mut con = pool.get().await.map_err(error::ErrorInternalServerError)?;
 
     // Remove everything ( in correct order! )
-    diesel::delete(attachments)
-        .execute(&mut con)
-        .await
-        .map_err(error::ErrorInternalServerError)?;
+    try_join!(
+        diesel::delete(attachments).execute(&mut con),
+        diesel::delete(transactions).execute(&mut con)
+    )
+    .map_err(error::ErrorInternalServerError)?;
     diesel::delete(items)
         .execute(&mut con)
         .await
@@ -452,7 +454,7 @@ pub async fn buy_item(
     query: web::Json<BuyQuery>,
     session: Session,
 ) -> Result<HttpResponse, Error> {
-    use crate::schema::{items, users};
+    use crate::schema::{items, transactions, users};
 
     // Gather and validate input
     let user_id =
@@ -509,7 +511,16 @@ pub async fn buy_item(
                             users::columns::balance_cents
                                 .eq(users::columns::balance_cents - total_price)
                         )
-                        .execute(con)
+                        .execute(con),
+                    // Log transaction
+                    diesel::insert_into(transactions::table)
+                        .values((
+                            transactions::columns::item_id.eq(item_id),
+                            transactions::columns::buyer_id.eq(user_id),
+                            transactions::columns::item_amount.eq(item_amount),
+                            transactions::columns::transacted_at.eq(chrono::offset::Utc::now()),
+                        ))
+                        .execute(con),
                 )?;
 
                 Ok(Ok(()))
