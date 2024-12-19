@@ -66,7 +66,7 @@ pub async fn hello_world() -> Result<HttpResponse, Error> {
     Ok(HttpResponse::Ok().body("Hello World!"))
 }
 
-#[get("/user/new")]
+#[post("/user/new")]
 pub async fn new_user(
     pool: web::Data<BB8Pool>,
     query: web::Json<UserQuery>,
@@ -114,7 +114,7 @@ pub async fn new_user(
     Ok(HttpResponse::Ok().body("OK"))
 }
 
-#[get("/user/login")]
+#[post("/user/login")]
 pub async fn login(
     pool: web::Data<BB8Pool>,
     query: web::Json<UserQuery>,
@@ -214,7 +214,7 @@ struct ItemResult {
     attachments: Vec<Attachment>,
 }
 
-#[get("/item/list")]
+#[post("/item/list")]
 pub async fn get_items(
     pool: web::Data<BB8Pool>,
     query: Option<web::Json<ItemQuery>>,
@@ -322,7 +322,7 @@ fn parse_decimal_to_cents(string: String) -> Result<u32, ()> {
     Ok(cents)
 }
 
-#[get("/item/new")]
+#[post("/item/new")]
 pub async fn new_item(
     pool: web::Data<BB8Pool>,
     query: web::Json<NewItemQuery>,
@@ -448,7 +448,7 @@ struct BuyQuery {
     amount: Option<i32>,
 }
 
-#[get("/item/buy")]
+#[post("/item/buy")]
 pub async fn buy_item(
     pool: web::Data<BB8Pool>,
     query: web::Json<BuyQuery>,
@@ -725,7 +725,7 @@ mod tests {
 
         // Log in with nonexsistent user
         let result = client
-            .get(format!("{URL}/api/user/login"))
+            .post(format!("{URL}/api/user/login"))
             .json(&user_query)
             .send()?;
         assert_ne!(
@@ -736,7 +736,7 @@ mod tests {
 
         // Create a new user
         let result = client
-            .get(format!("{URL}/api/user/new"))
+            .post(format!("{URL}/api/user/new"))
             .json(&user_query)
             .send()?;
         assert_eq!(result.status(), 200, "Could not create a new user");
@@ -794,7 +794,7 @@ mod tests {
 
         // Register test users and log them in to their clients
         let result = client
-            .get(format!("{URL}/api/user/new"))
+            .post(format!("{URL}/api/user/new"))
             .json(&UserQuery {
                 username: "test".to_string(),
                 password: "test".to_string(),
@@ -803,7 +803,7 @@ mod tests {
         assert_eq!(result.status(), 200, "Could not create a new user");
 
         let result = client2
-            .get(format!("{URL}/api/user/new"))
+            .post(format!("{URL}/api/user/new"))
             .json(&UserQuery {
                 username: "test2".to_string(),
                 password: "test".to_string(),
@@ -813,7 +813,7 @@ mod tests {
 
         // Test selling items
         let result = client
-            .get(format!("{URL}/api/item/new"))
+            .post(format!("{URL}/api/item/new"))
             .json(&NewItemQuery {
                 title: "test item".to_string(),
                 description: "test description".to_string(),
@@ -826,7 +826,7 @@ mod tests {
         assert_eq!(item.price_cents, 111, "Could not create new item for sale");
 
         let result = client2
-            .get(format!("{URL}/api/item/new"))
+            .post(format!("{URL}/api/item/new"))
             .json(&NewItemQuery {
                 title: "the best item".to_string(),
                 description: "the best item description".to_string(),
@@ -857,7 +857,7 @@ mod tests {
         assert_eq!(user.balance_cents, 250, "User has unexpected balance");
 
         // Item listing
-        let result = client.get(format!("{URL}/api/item/list")).send()?;
+        let result = client.post(format!("{URL}/api/item/list")).send()?;
         let items: Vec<Item> = result.json()?;
         assert_eq!(
             items.len(),
@@ -867,7 +867,7 @@ mod tests {
 
         // Item searching
         let result = client
-            .get(format!("{URL}/api/item/list"))
+            .post(format!("{URL}/api/item/list"))
             .json(&ItemQuery {
                 search_term: Some("best".to_string()),
                 limit: None,
@@ -880,7 +880,7 @@ mod tests {
 
         // Item buying
         let result = client
-            .get(format!("{URL}/api/item/buy"))
+            .post(format!("{URL}/api/item/buy"))
             .json(&BuyQuery {
                 item_id: item2.id,
                 amount: Some(1),
@@ -889,7 +889,7 @@ mod tests {
         assert_eq!(result.status(), 200, "Could not buy an item");
 
         let result = client2
-            .get(format!("{URL}/api/item/buy"))
+            .post(format!("{URL}/api/item/buy"))
             .json(&BuyQuery {
                 item_id: item.id,
                 amount: Some(2),
@@ -951,7 +951,7 @@ mod tests {
 
         // Register test users and log them in to their clients
         let result = client
-            .get(format!("{URL}/api/user/new"))
+            .post(format!("{URL}/api/user/new"))
             .json(&UserQuery {
                 username: "test".to_string(),
                 password: "test".to_string(),
@@ -960,7 +960,7 @@ mod tests {
         assert_eq!(result.status(), 200, "Could not create a new user");
 
         let result = client2
-            .get(format!("{URL}/api/user/new"))
+            .post(format!("{URL}/api/user/new"))
             .json(&UserQuery {
                 username: "test2".to_string(),
                 password: "test".to_string(),
@@ -995,7 +995,7 @@ mod tests {
 
         // Sell an item with uploaded attachment
         let result = client
-            .get(format!("{URL}/api/item/new"))
+            .post(format!("{URL}/api/item/new"))
             .json(&NewItemQuery {
                 title: "test item".to_string(),
                 description: "test description".to_string(),
@@ -1012,7 +1012,7 @@ mod tests {
 
         // Try to sell an item with attachment beloning to another user
         let result = client
-            .get(format!("{URL}/api/item/new"))
+            .post(format!("{URL}/api/item/new"))
             .json(&NewItemQuery {
                 title: "test item".to_string(),
                 description: "test description".to_string(),
@@ -1029,7 +1029,7 @@ mod tests {
 
         // Try to re-use attachment
         let result = client
-            .get(format!("{URL}/api/item/new"))
+            .post(format!("{URL}/api/item/new"))
             .json(&NewItemQuery {
                 title: "test item".to_string(),
                 description: "test description".to_string(),
