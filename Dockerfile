@@ -4,7 +4,7 @@
 # multi-stage build feature. This also leverages the docker build cache to avoid
 # re-downloading dependencies if they have not changed.
 FROM rust:alpine AS chef
-RUN apk add --no-cache musl-dev openssl-dev
+RUN apk add --no-cache musl-dev openssl-dev libpq-dev
 
 # Comment out if you don't need nightly
 RUN rustup default nightly
@@ -30,7 +30,7 @@ RUN cargo build --release --target x86_64-unknown-linux-musl --bin kattilakioski
 RUN apk add --no-cache nodejs npm
 RUN npm install --global yarn vite
 RUN yarn install
-RUN vite build
+RUN yarn run build
 
 # ----- FINAL CONTAINER ----- 
 # Copy the statically-linked binary into a scratch container

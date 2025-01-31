@@ -23,8 +23,8 @@ rand = "0.8"
 image = "0.25"
 webp = "0.3"
 async-fs = "2.1"
-itertools = "0.13"
-tokio = { version = "1.42", features = ["macros"] }
+itertools = "0.14"
+tokio = { version = "1.43", features = ["macros"] }
 signal-hook = "0.3"
 signal-hook-tokio = { version = "0.3", features = ["futures-v0_3"] }
 futures-util = "0.3"
