@@ -12,6 +12,7 @@ RUN rustup default nightly
 RUN rustup target add x86_64-unknown-linux-musl
 RUN cargo install cargo-chef
 WORKDIR /app
+ENV RUSTFLAGS="-C target-feature=-crt-static"
 
 FROM chef AS planner
 COPY . .
