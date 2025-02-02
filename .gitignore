@@ -25,3 +25,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Copiled themes
+/frontend/public/smui.css
+/frontend/public/smui-dark.css

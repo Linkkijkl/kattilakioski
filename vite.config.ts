@@ -3,10 +3,13 @@ import { svelte } from '@sveltejs/vite-plugin-svelte'
 
 // https://vite.dev/config/
 export default defineConfig({
-  root: "frontend",
+  root: 'frontend',
   plugins: [svelte()],
   build: {
-    outDir: "../dist",
+    outDir: '../dist',
     emptyOutDir: true,
+  },
+  server: {
+    host: '127.0.0.1'
   }
 })
