@@ -1,7 +1,7 @@
 <script lang="ts">
     import IconButton, { Icon } from '@smui/icon-button';
     import TopAppBar, { Row, Section, Title as TopAppBarTitle } from '@smui/top-app-bar';
-    import { mdiMenu, mdiSearchWeb } from '@mdi/js';
+    import { mdiMenu, mdiSearchWeb, mdiBasket, mdiCash, mdiAccountCircle } from '@mdi/js';
     import Drawer, {
       AppContent,
       Content,
@@ -13,7 +13,7 @@
   import List, { Item, Text, Graphic, Separator, Subheader } from '@smui/list';
   
   let drawerOpen = $state(false);
-  let view = $state("buy");
+  let view = $state('buy');
   const setView = (val: string) => view = val; 
 </script>
 
@@ -27,27 +27,39 @@
       <List>
         <Item
           href="javascript:void(0)"
-          onclick={() => setView('Inbox')}
-          activated={view === 'Inbox'}
+          onclick={() => setView('buy')}
+          activated={view === 'buy'}
         >
-          <Graphic class="material-icons" aria-hidden="true">inbox</Graphic>
-          <Text>Inbox</Text>
+          <IconButton aria-label="Buy">
+            <Icon tag="svg" viewBox="0 0 24 24">
+              <path fill="currentColor" d={mdiBasket} />
+            </Icon>
+          </IconButton>
+          <Text>Buy</Text>
         </Item>
         <Item
           href="javascript:void(0)"
-          onclick={() => setView('Star')}
-          activated={view === 'Star'}
+          onclick={() => setView('sell')}
+          activated={view === 'sell'}
         >
-          <Graphic class="material-icons" aria-hidden="true">star</Graphic>
-          <Text>Star</Text>
+        <IconButton aria-label="Sell">
+          <Icon tag="svg" viewBox="0 0 24 24">
+            <path fill="currentColor" d={mdiCash} />
+          </Icon>
+        </IconButton>
+          <Text>Sell</Text>
         </Item>
         <Item
           href="javascript:void(0)"
-          onclick={() => setView('Sent Mail')}
-          activated={view === 'Sent Mail'}
+          onclick={() => setView('login')}
+          activated={view === 'login'}
         >
-          <Graphic class="material-icons" aria-hidden="true">send</Graphic>
-          <Text>Sent Mail</Text>
+          <IconButton aria-label="Login">
+            <Icon tag="svg" viewBox="0 0 24 24">
+              <path fill="currentColor" d={mdiAccountCircle} />
+            </Icon>
+          </IconButton>
+          <Text>Login</Text>
         </Item>
       </List>
     </Content>
@@ -75,13 +87,13 @@
         </Section>
       </Row>
     </TopAppBar>
-      <div class="flexor-content">
-        <img
-          alt="Page content placeholder"
-          src="/page-content.jpg"
-          style="display: block; max-width: 100%; height: auto; margin: 1em auto;"
-        />
-      </div>
+    {#if view === 'buy'}
+      <p>Buy</p>
+    {:else if view === 'sell'}
+      <p>Sell</p>
+    {:else if view == 'login'}
+      <p>Login</p>
+    {/if}
   </AppContent>
 </main>
 
