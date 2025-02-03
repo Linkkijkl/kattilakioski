@@ -266,6 +266,20 @@
   dependencies:
     tslib "^2.1.0"
 
+"@material/floating-label@^14.0.0":
+  version "14.0.0"
+  resolved "https://registry.yarnpkg.com/@material/floating-label/-/floating-label-14.0.0.tgz#9314f26798090d806f3772360bd694cba19443ce"
+  integrity sha512-Aq8BboP1sbNnOtsV72AfaYirHyOrQ/GKFoLrZ1Jt+ZGIAuXPETcj9z7nQDznst0ZeKcz420PxNn9tsybTbeL/Q==
+  dependencies:
+    "@material/animation" "^14.0.0"
+    "@material/base" "^14.0.0"
+    "@material/dom" "^14.0.0"
+    "@material/feature-targeting" "^14.0.0"
+    "@material/rtl" "^14.0.0"
+    "@material/theme" "^14.0.0"
+    "@material/typography" "^14.0.0"
+    tslib "^2.1.0"
+
 "@material/focus-ring@^14.0.0":
   version "14.0.0"
   resolved "https://registry.yarnpkg.com/@material/focus-ring/-/focus-ring-14.0.0.tgz#946c27f9f724e9560b6919676b4be166cfab539b"
@@ -299,6 +313,17 @@
   dependencies:
     tslib "^2.1.0"
 
+"@material/line-ripple@^14.0.0":
+  version "14.0.0"
+  resolved "https://registry.yarnpkg.com/@material/line-ripple/-/line-ripple-14.0.0.tgz#460e972dd99d119b97d3ee4b7a73bc1d199abfad"
+  integrity sha512-Rx9eSnfp3FcsNz4O+fobNNq2PSm5tYHC3hRpY2ZK3ghTvgp3Y40/soaGEi/Vdg0F7jJXRaBSNOe6p5t9CVfy8Q==
+  dependencies:
+    "@material/animation" "^14.0.0"
+    "@material/base" "^14.0.0"
+    "@material/feature-targeting" "^14.0.0"
+    "@material/theme" "^14.0.0"
+    tslib "^2.1.0"
+
 "@material/list@^14.0.0":
   version "14.0.0"
   resolved "https://registry.yarnpkg.com/@material/list/-/list-14.0.0.tgz#724d8a17b01200217262036ef031489270170c89"
@@ -313,6 +338,19 @@
     "@material/shape" "^14.0.0"
     "@material/theme" "^14.0.0"
     "@material/typography" "^14.0.0"
+    tslib "^2.1.0"
+
+"@material/notched-outline@^14.0.0":
+  version "14.0.0"
+  resolved "https://registry.yarnpkg.com/@material/notched-outline/-/notched-outline-14.0.0.tgz#b315e2cfaf8226c557f253362ea4167f87a241ce"
+  integrity sha512-6S58DlWmhCDr4RQF2RuwqANxlmLdHtWy2mF4JQLD9WOiCg4qY9eCQnMXu3Tbhr7f/nOZ0vzc7AtA3vfJoZmCSw==
+  dependencies:
+    "@material/base" "^14.0.0"
+    "@material/feature-targeting" "^14.0.0"
+    "@material/floating-label" "^14.0.0"
+    "@material/rtl" "^14.0.0"
+    "@material/shape" "^14.0.0"
+    "@material/theme" "^14.0.0"
     tslib "^2.1.0"
 
 "@material/ripple@^14.0.0":
@@ -344,6 +382,27 @@
     "@material/feature-targeting" "^14.0.0"
     "@material/rtl" "^14.0.0"
     "@material/theme" "^14.0.0"
+    tslib "^2.1.0"
+
+"@material/textfield@^14.0.0":
+  version "14.0.0"
+  resolved "https://registry.yarnpkg.com/@material/textfield/-/textfield-14.0.0.tgz#8ce939ef38a083104e4585b8ebf25c840c1c40b6"
+  integrity sha512-HGbtAlvlIB2vWBq85yw5wQeeP3Kndl6Z0TJzQ6piVtcfdl2mPyWhuuVHQRRAOis3rCIaAAaxCQYYTJh8wIi0XQ==
+  dependencies:
+    "@material/animation" "^14.0.0"
+    "@material/base" "^14.0.0"
+    "@material/density" "^14.0.0"
+    "@material/dom" "^14.0.0"
+    "@material/feature-targeting" "^14.0.0"
+    "@material/floating-label" "^14.0.0"
+    "@material/line-ripple" "^14.0.0"
+    "@material/notched-outline" "^14.0.0"
+    "@material/ripple" "^14.0.0"
+    "@material/rtl" "^14.0.0"
+    "@material/shape" "^14.0.0"
+    "@material/theme" "^14.0.0"
+    "@material/tokens" "^14.0.0"
+    "@material/typography" "^14.0.0"
     tslib "^2.1.0"
 
 "@material/theme@^14.0.0":
@@ -625,6 +684,14 @@
     "@material/drawer" "^14.0.0"
     "@smui/common" "^8.0.0-beta.3"
 
+"@smui/floating-label@^8.0.0-beta.3":
+  version "8.0.0-beta.3"
+  resolved "https://registry.yarnpkg.com/@smui/floating-label/-/floating-label-8.0.0-beta.3.tgz#a9a4e5ddc9bc2a58b7b2141bfc05d8f5b37c48cd"
+  integrity sha512-lZmvDahjla7JDKspF9tBUq2sFpeaK5R22f2WCQGOmAV39ygV68ZZg7jKcwqDJJlLLflZXDmISmS/O2GTZQRyvg==
+  dependencies:
+    "@material/floating-label" "^14.0.0"
+    "@smui/common" "^8.0.0-beta.3"
+
 "@smui/icon-button@^8.0.0-beta.3":
   version "8.0.0-beta.3"
   resolved "https://registry.yarnpkg.com/@smui/icon-button/-/icon-button-8.0.0-beta.3.tgz#22ea6243f2b6c51aef4e53f3f839f454c6a12acd"
@@ -643,6 +710,14 @@
     "@material/layout-grid" "^14.0.0"
     "@smui/common" "^8.0.0-beta.3"
 
+"@smui/line-ripple@^8.0.0-beta.3":
+  version "8.0.0-beta.3"
+  resolved "https://registry.yarnpkg.com/@smui/line-ripple/-/line-ripple-8.0.0-beta.3.tgz#996c2cd56c34f04ef9fde881dbca0fd4fc548d55"
+  integrity sha512-hnrLfyw6D7b8pBnd0Lcq+xVFTzAkAhL4D/hqzWhaA62PZmMGzpiju2/7CsTo80qfWqjHU43ku/C+2b4DMSFWMg==
+  dependencies:
+    "@material/line-ripple" "^14.0.0"
+    "@smui/common" "^8.0.0-beta.3"
+
 "@smui/list@^8.0.0-beta.3":
   version "8.0.0-beta.3"
   resolved "https://registry.yarnpkg.com/@smui/list/-/list-8.0.0-beta.3.tgz#fb48933a160b3acf2d32335e566d7bcd599e6c8c"
@@ -654,6 +729,15 @@
     "@smui/common" "^8.0.0-beta.3"
     "@smui/ripple" "^8.0.0-beta.3"
 
+"@smui/notched-outline@^8.0.0-beta.3":
+  version "8.0.0-beta.3"
+  resolved "https://registry.yarnpkg.com/@smui/notched-outline/-/notched-outline-8.0.0-beta.3.tgz#7db19885292aa6dca00a51f276e7493a4a5149c0"
+  integrity sha512-l4n6b/VlQX51STktWi4sRk4wY3uhKe7XVAj7SO8yb1235djEucifKXsPnk49sKlPOUW5xUJVmn1VLKIhEAlFJA==
+  dependencies:
+    "@material/notched-outline" "^14.0.0"
+    "@smui/common" "^8.0.0-beta.3"
+    "@smui/floating-label" "^8.0.0-beta.3"
+
 "@smui/ripple@^8.0.0-beta.3":
   version "8.0.0-beta.3"
   resolved "https://registry.yarnpkg.com/@smui/ripple/-/ripple-8.0.0-beta.3.tgz#e1cff17e9b9f6e9259b806ff5c0829c8e62b6094"
@@ -662,6 +746,22 @@
     "@material/dom" "^14.0.0"
     "@material/ripple" "^14.0.0"
     "@smui/common" "^8.0.0-beta.3"
+
+"@smui/textfield@^8.0.0-beta.3":
+  version "8.0.0-beta.3"
+  resolved "https://registry.yarnpkg.com/@smui/textfield/-/textfield-8.0.0-beta.3.tgz#5823e6353bd735b74450180e54b0cf7a01ba8491"
+  integrity sha512-+82oCsIvp/mOp7yi4J/lE+U040fWFXDaoo0aGoYurePhzlX8LIoEupAfIeQ56EBfkDwwW9ZkDpkfsFUc1oYU8A==
+  dependencies:
+    "@material/dom" "^14.0.0"
+    "@material/feature-targeting" "^14.0.0"
+    "@material/ripple" "^14.0.0"
+    "@material/rtl" "^14.0.0"
+    "@material/textfield" "^14.0.0"
+    "@smui/common" "^8.0.0-beta.3"
+    "@smui/floating-label" "^8.0.0-beta.3"
+    "@smui/line-ripple" "^8.0.0-beta.3"
+    "@smui/notched-outline" "^8.0.0-beta.3"
+    "@smui/ripple" "^8.0.0-beta.3"
 
 "@smui/top-app-bar@^8.0.0-beta.3":
   version "8.0.0-beta.3"

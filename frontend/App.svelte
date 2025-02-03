@@ -11,7 +11,8 @@
       Scrim,
   } from '@smui/drawer';
   import List, { Item, Text, Graphic, Separator, Subheader } from '@smui/list';
-  import ItemCard from './lib/ItemCard.svelte';
+  import ItemListing from './lib/ItemListing.svelte';
+  import Login from './lib/Login.svelte';
   
   let drawerOpen = $state(false);
   let view = $state('buy');
@@ -89,11 +90,11 @@
       </Row>
     </TopAppBar>
     {#if view === 'buy'}
-      <ItemCard title="Nuudelit" description="Mama nuudeli pls" price={0.40} stock=1 />
+      <ItemListing />
     {:else if view === 'sell'}
       <p>Sell</p>
     {:else if view == 'login'}
-      <p>Login</p>
+      <Login />
     {/if}
   </AppContent>
 </main>
