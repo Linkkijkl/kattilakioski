@@ -181,6 +181,39 @@
   dependencies:
     tslib "^2.1.0"
 
+"@material/button@^14.0.0":
+  version "14.0.0"
+  resolved "https://registry.yarnpkg.com/@material/button/-/button-14.0.0.tgz#444402b5c1e31c3b63110fa640985a01102c0675"
+  integrity sha512-dqqHaJq0peyXBZupFzCjmvScrfljyVU66ZCS3oldsaaj5iz8sn33I/45Z4zPzdR5F5z8ExToHkRcXhakj1UEAA==
+  dependencies:
+    "@material/density" "^14.0.0"
+    "@material/dom" "^14.0.0"
+    "@material/elevation" "^14.0.0"
+    "@material/feature-targeting" "^14.0.0"
+    "@material/focus-ring" "^14.0.0"
+    "@material/ripple" "^14.0.0"
+    "@material/rtl" "^14.0.0"
+    "@material/shape" "^14.0.0"
+    "@material/theme" "^14.0.0"
+    "@material/tokens" "^14.0.0"
+    "@material/touch-target" "^14.0.0"
+    "@material/typography" "^14.0.0"
+    tslib "^2.1.0"
+
+"@material/card@^14.0.0":
+  version "14.0.0"
+  resolved "https://registry.yarnpkg.com/@material/card/-/card-14.0.0.tgz#81a8d201bbfb37cbb4d0b738cb55f23da787c643"
+  integrity sha512-SnpYWUrCb92meGYLXV7qa/k40gnHR6rPki6A1wz0OAyG2twY48f0HLscAqxBLvbbm1LuRaqjz0RLKGH3VzxZHw==
+  dependencies:
+    "@material/dom" "^14.0.0"
+    "@material/elevation" "^14.0.0"
+    "@material/feature-targeting" "^14.0.0"
+    "@material/ripple" "^14.0.0"
+    "@material/rtl" "^14.0.0"
+    "@material/shape" "^14.0.0"
+    "@material/theme" "^14.0.0"
+    tslib "^2.1.0"
+
 "@material/density@^14.0.0":
   version "14.0.0"
   resolved "https://registry.yarnpkg.com/@material/density/-/density-14.0.0.tgz#584c4f3468c86c96e361ebe7ba6723f4aa6cd548"
@@ -259,6 +292,13 @@
     "@material/touch-target" "^14.0.0"
     tslib "^2.1.0"
 
+"@material/layout-grid@^14.0.0":
+  version "14.0.0"
+  resolved "https://registry.yarnpkg.com/@material/layout-grid/-/layout-grid-14.0.0.tgz#d70569dfd7d372f0c72d30b8b87f3965a3c6bc72"
+  integrity sha512-tAce0PR/c85VI2gf1HUdM0Y15ZWpfZWAFIwaCRW1+jnOLWnG1/aOJYLlzqtVEv2m0TS1R1WRRGN3Or+CWvpDRA==
+  dependencies:
+    tslib "^2.1.0"
+
 "@material/list@^14.0.0":
   version "14.0.0"
   resolved "https://registry.yarnpkg.com/@material/list/-/list-14.0.0.tgz#724d8a17b01200217262036ef031489270170c89"
@@ -313,6 +353,13 @@
   dependencies:
     "@material/feature-targeting" "^14.0.0"
     tslib "^2.1.0"
+
+"@material/tokens@^14.0.0":
+  version "14.0.0"
+  resolved "https://registry.yarnpkg.com/@material/tokens/-/tokens-14.0.0.tgz#67cdc2530cecda8509867e941249b7d4778400a7"
+  integrity sha512-SXgB9VwsKW4DFkHmJfDIS0x0cGdMWC1D06m6z/WQQ5P5j6/m0pKrbHVlrLzXcRjau+mFhXGvj/KyPo9Pp/Rc8Q==
+  dependencies:
+    "@material/elevation" "^14.0.0"
 
 "@material/top-app-bar@^14.0.0":
   version "14.0.0"
@@ -537,6 +584,31 @@
   resolved "https://registry.yarnpkg.com/@rollup/rollup-win32-x64-msvc/-/rollup-win32-x64-msvc-4.28.1.tgz#4dff5c4259ebe6c5b4a8f2c5bc3829b7a8447ff0"
   integrity sha512-ZvK2jBafvttJjoIdKm/Q/Bh7IJ1Ose9IBOwpOXcOvW3ikGTQGmKDgxTC6oCAzW6PynbkKP8+um1du81XJHZ0JA==
 
+"@smui/button@^8.0.0-beta.3":
+  version "8.0.0-beta.3"
+  resolved "https://registry.yarnpkg.com/@smui/button/-/button-8.0.0-beta.3.tgz#a4399b656ce0c6889ed547b86a08440db9ad0798"
+  integrity sha512-1jzK3wznd18kQxOyyrzGEijtcUcvuRcLhTaQwrYk6E7McjTD6O8gvLMTUCwLnQO4r3x9DHuUpBHnPxB4kBcg5w==
+  dependencies:
+    "@material/button" "^14.0.0"
+    "@material/elevation" "^14.0.0"
+    "@material/feature-targeting" "^14.0.0"
+    "@material/ripple" "^14.0.0"
+    "@material/shape" "^14.0.0"
+    "@material/theme" "^14.0.0"
+    "@smui/common" "^8.0.0-beta.3"
+    "@smui/ripple" "^8.0.0-beta.3"
+
+"@smui/card@^8.0.0-beta.3":
+  version "8.0.0-beta.3"
+  resolved "https://registry.yarnpkg.com/@smui/card/-/card-8.0.0-beta.3.tgz#037ebf84394915ef69f8674b46271d64d1523fb7"
+  integrity sha512-mxTg8u74YC2F7UwcwjJfNcyoqxBJVrcx6zhyBti/BFrIJ0QdV/QpMqLNndrvCPV8amrODeBlNApiaqBmU4mLKQ==
+  dependencies:
+    "@material/card" "^14.0.0"
+    "@smui/button" "^8.0.0-beta.3"
+    "@smui/common" "^8.0.0-beta.3"
+    "@smui/icon-button" "^8.0.0-beta.3"
+    "@smui/ripple" "^8.0.0-beta.3"
+
 "@smui/common@^8.0.0-beta.3":
   version "8.0.0-beta.3"
   resolved "https://registry.yarnpkg.com/@smui/common/-/common-8.0.0-beta.3.tgz#008438bdc8fd42151dfe5dedb72d123aea035de6"
@@ -562,6 +634,14 @@
     "@material/icon-button" "^14.0.0"
     "@smui/common" "^8.0.0-beta.3"
     "@smui/ripple" "^8.0.0-beta.3"
+
+"@smui/layout-grid@^8.0.0-beta.3":
+  version "8.0.0-beta.3"
+  resolved "https://registry.yarnpkg.com/@smui/layout-grid/-/layout-grid-8.0.0-beta.3.tgz#bcf21a42aced02a483aa8bdf0c84aa334a56a2d2"
+  integrity sha512-YbK/3ppXONkeMKsHQMgAVKO8NQ/y+I4tMe2fAklXnU/q7UnoG8ltcD2zv9Y8M0fF7psDYl3Agt122ASyvZtnxQ==
+  dependencies:
+    "@material/layout-grid" "^14.0.0"
+    "@smui/common" "^8.0.0-beta.3"
 
 "@smui/list@^8.0.0-beta.3":
   version "8.0.0-beta.3"

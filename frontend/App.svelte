@@ -11,10 +11,11 @@
       Scrim,
   } from '@smui/drawer';
   import List, { Item, Text, Graphic, Separator, Subheader } from '@smui/list';
+  import ItemCard from './lib/ItemCard.svelte';
   
   let drawerOpen = $state(false);
   let view = $state('buy');
-  const setView = (val: string) => view = val; 
+  const setView = (val: string) => view = val;
 </script>
 
 <main>
@@ -88,7 +89,7 @@
       </Row>
     </TopAppBar>
     {#if view === 'buy'}
-      <p>Buy</p>
+      <ItemCard title="Nuudelit" description="Mama nuudeli pls" price={0.40} stock=1 />
     {:else if view === 'sell'}
       <p>Sell</p>
     {:else if view == 'login'}
