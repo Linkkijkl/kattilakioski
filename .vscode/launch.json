@@ -7,7 +7,7 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'kattilakioski'",
+            "name": "Debug backend",
             "cargo": {
                 "args": [
                     "build",
@@ -28,7 +28,7 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'kattilakioski'",
+            "name": "Debug backend tests",
             "cargo": {
                 "args": [
                     "test",
@@ -46,6 +46,26 @@
                 "RUST_LOG": "debug"
             },
             "cwd": "${workspaceFolder}"
-        }
+        },
+        {
+            "command": "yarn dev",
+            "name": "Start frontend development server",
+            "request": "launch",
+            "type": "node-terminal"
+        },
+        {
+            "type":"chrome",
+            "request":"launch",
+            "name":"Attach to Chrome debugger running frontend",
+            "url":"http://localhost:4000",
+            "webRoot":"${workspaceFolder}/frontend"
+        },
+        {
+            "type":"firefox",
+            "request":"launch",
+            "name":"Attach to Firefox debugger running frontend",
+            "url":"http://localhost:4000",
+            "webRoot":"${workspaceFolder}/frontend"
+        },
     ]
 }

@@ -1,3 +1,6 @@
+// Use development api url in development builds
+const apiUrl = import.meta.env.PROD ? "/api" : "http://localhost:3030/api";
+
 type UserQuery = {
     username: string,
     password: string
@@ -10,7 +13,7 @@ let username: string | null = null;
  * @param {UserQuery} query Login information
  */
 const login = async (query: UserQuery): Promise<void> => {
-    const response = await fetch("/api/user/login", {
+    const response = await fetch(`${apiUrl}/user/login`, {
         body: JSON.stringify(query)
     });
     if (response.status != 200) {
@@ -23,7 +26,7 @@ const login = async (query: UserQuery): Promise<void> => {
  * Logs user out
  */
 const logout = async (): Promise<void> => {
-    const response = await fetch("/api/user/logout");
+    const response = await fetch(`${apiUrl}/user/logout`);
     if (response.status != 200) {
         throw new Error(await response.text());
     }
@@ -35,7 +38,7 @@ const logout = async (): Promise<void> => {
  * @param {UserQuery} query Login information
  */
 const newUser = async (query: UserQuery): Promise<void> => {
-    const response = await fetch("/api/user/new", {
+    const response = await fetch(`${apiUrl}/user/new`, {
         body: JSON.stringify(query)
     });
     if (response.status != 200) {
@@ -55,7 +58,7 @@ type User = {
  * @returns {User} User information
  */
 const userInfo = async (): Promise<User> => {
-    const response = await fetch("/api/user/info");
+    const response = await fetch(`${apiUrl}/user/info`);
     if (response.status != 200) {
         throw new Error(await response.text());
     }
@@ -66,13 +69,13 @@ const userInfo = async (): Promise<User> => {
  * Returns username of user logged in. Faster than `userInfo()`.
  * @returns {string | null} Username of user logged in
  */
-const getUsername = (): string | null => username;
+//const getUsername = (): string | null => username;
 
 /**
  * Returns true if user is logged in. Faster than `userInfo()`.
  * @returns {boolean} Is user logged in
  */
-const isLoggedIn = (): boolean => username != null;
+//const isLoggedIn = (): boolean => username != null;
 
 type ItemQuery = {
     search_term: string | null,
@@ -109,7 +112,7 @@ const getItems = async (query: ItemQuery | null = null): Promise<ItemResult[]> =
     if (query == null) {
         query = { limit: null, offset: null, search_term: null };
     }
-    const response = await fetch("/api/item/list", {
+    const response = await fetch(`${apiUrl}/item/list`, {
         body: JSON.stringify(query)
     });
     if (response.status != 200) {
@@ -134,7 +137,7 @@ type NewItemQuery = {
  * @returns {ItemResult} Created attachment information
  */
 const newItem = async (query: NewItemQuery): Promise<ItemResult> => {
-    const response = await fetch("/api/item/new", {
+    const response = await fetch(`${apiUrl}/item/new`, {
         body: JSON.stringify(query)
     });
     if (response.status != 200) {
@@ -151,7 +154,7 @@ const newItem = async (query: NewItemQuery): Promise<ItemResult> => {
 const newAttachment = async (file: File): Promise<Attachment> => {
     const formData = new FormData();
     formData.append("file", file);
-    const response = await fetch("/api/attachment/upload", {
+    const response = await fetch(`${apiUrl}/attachment/upload`, {
         body: formData
     });
     if (response.status != 200) {
@@ -170,7 +173,7 @@ type BuyQuery = {
  * @param {BuyQuery} query Item id and amount to be bought
  */
 const buy = async (query: BuyQuery): Promise<void> => {
-    const response = await fetch("/api/item/buy", {
+    const response = await fetch(`${apiUrl}/item/buy`, {
         body: JSON.stringify(query)
     });
     if (response.status != 200) {
@@ -179,4 +182,4 @@ const buy = async (query: BuyQuery): Promise<void> => {
 };
 
 export { BuyQuery, ItemQuery, NewItemQuery, UserQuery,
-    login, logout, newUser, userInfo, getUsername, isLoggedIn, getItems, newItem, newAttachment, buy };
+    login, logout, newUser, userInfo, /* getUsername, isLoggedIn, */ getItems, newItem, newAttachment, buy };
