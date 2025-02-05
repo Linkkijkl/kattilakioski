@@ -1,5 +1,4 @@
-// Use development api url in development builds
-const apiUrl = import.meta.env.PROD ? "/api" : "http://localhost:3030/api";
+const apiUrl = "/api";
 
 type UserQuery = {
     username: string,
@@ -113,7 +112,8 @@ const getItems = async (query: ItemQuery | null = null): Promise<ItemResult[]> =
         query = { limit: null, offset: null, search_term: null };
     }
     const response = await fetch(`${apiUrl}/item/list`, {
-        body: JSON.stringify(query)
+        body: JSON.stringify(query),
+        method: "POST",
     });
     if (response.status != 200) {
         throw new Error(await response.text());
