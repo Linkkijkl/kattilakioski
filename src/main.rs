@@ -110,6 +110,7 @@ async fn main() -> std::io::Result<()> {
                 .wrap(cookie_middleware)
                 .wrap(logger_middleware)
                 .configure(api::config)
+                .service(Files::new("/public", "public"))
                 .service(Files::new("/", "dist").index_file("index.html"))
         })
         .bind(("0.0.0.0", 3030))?

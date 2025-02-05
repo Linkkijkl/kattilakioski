@@ -12,55 +12,62 @@
 	import IconButton, { Icon } from "@smui/icon-button";
 	import LayoutGrid, { Cell } from "@smui/layout-grid";
 
-	let clicked = $state(0);
 	let {
 		title = "no title",
 		description = "no description",
 		image = "https://placehold.co/320x180?text=16x9",
 		price = NaN,
 		stock = NaN,
+		preview = false,
 	} = $props();
+
+	const buy = () => {
+		console.log("Not implemented!");
+	}
 </script>
 
 <div class="card-display">
 	<div class="card-container">
 		<Card>
-			<PrimaryAction onclick={() => clicked++}>
-				<Media class="card-media-16x9" aspectRatio="16x9" background-image={image}/>
+			<PrimaryAction onclick={buy}>
+				<Media
+					class="card-media-16x9"
+					aspectRatio="16x9"
+					style="background-image: url({image})"
+				/>
 				<Content class="mdc-typography--body2">
-					<LayoutGrid>
-						<Cell span={6}>
-							<div class="card-cell">
-								<h2 class="mdc-typography--headline6" style="margin: 0;">
-									{title}
-								</h2>
-							</div>
+					<div class="content">
+						<div>
+							<h2 class="mdc-typography--headline6">
+								{title}
+							</h2>
 							{description}
-						</Cell>
-						<Cell span={1}>
-							<div class="card-cell">
-								{price}€
-							</div>
-						</Cell>
-					</LayoutGrid>
+						</div>
+						<div>
+							{price}€
+						</div>
+					</div>
 				</Content>
 			</PrimaryAction>
-			<Actions>
-				<ActionButtons>
-					<Button onclick={() => clicked++}>
-						<Label>Buy</Label>
-					</Button>
-				</ActionButtons>
-			</Actions>
+			{#if !preview}
+				<Actions>
+					<ActionButtons>
+						<Button onclick={buy}>
+							<Label>Buy</Label>
+						</Button>
+					</ActionButtons>
+				</Actions>
+			{/if}
 		</Card>
 	</div>
 </div>
 
 <style>
-	* :global(.card-media-16x9) {
-		background-image: url(https://placehold.co/320x180?text=16x9);
+	h2 {
+		margin: 0;
 	}
-	.card-cell {
+	.content {
 		display: flex;
+		justify-content: space-between;
 	}
 </style>
