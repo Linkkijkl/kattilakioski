@@ -1,43 +1,31 @@
-# ----- BUILD BACKEND -----
-
-# Dockerfile for creating a statically-linked Rust application using docker's
-# multi-stage build feature. This also leverages the docker build cache to avoid
-# re-downloading dependencies if they have not changed.
-FROM rust:alpine AS chef
-RUN apk add --no-cache musl-dev openssl-dev libpq-dev
-
-# Comment out if you don't need nightly
-RUN rustup default nightly
-
-RUN rustup target add x86_64-unknown-linux-musl
-RUN cargo install cargo-chef
+FROM rust:alpine AS builder
+RUN apk add --no-cache musl-dev openssl-dev libpq-dev nodejs npm
 WORKDIR /app
+
+# Backend
+RUN rustup default nightly
 ENV RUSTFLAGS="-C target-feature=-crt-static"
+# Future debugger: add your additional Rust specific files to the following
+# line. Specifying the files makes Docker use cache if they are not modified,
+# skipping the tidiously long build.
+COPY Cargo.lock Cargo.toml diesel.toml .
+COPY src src
+COPY migrations migrations
+RUN cargo build --release --bin kattilakioski
 
-FROM chef AS planner
-COPY . .
-RUN cargo chef prepare --recipe-path recipe.json
-
-FROM chef AS builder
-COPY --from=planner /app/recipe.json recipe.json
-# Build dependencies - this is the caching Docker layer!
-RUN cargo chef cook --release --target x86_64-unknown-linux-musl --recipe-path recipe.json
-# Build application
-COPY . .
-RUN cargo build --release --target x86_64-unknown-linux-musl --bin kattilakioski
-
-# ----- BUILD FRONTEND -----
-
+# Frontend
 RUN apk add --no-cache nodejs npm
 RUN npm install --global yarn vite
+COPY . .
+RUN mkdir -p frontend/public
 RUN yarn install
 RUN yarn run build
 
-# ----- FINAL CONTAINER ----- 
-# Copy the statically-linked binary into a scratch container
-FROM scratch AS runtime
+# Final container
+FROM alpine AS runtime
+RUN apk add --no-cache libpq-dev libgcc
 WORKDIR /app
-COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/kattilakioski /usr/local/bin/kattilakioski
-COPY --from=builder /app/dist /usr/local/bin/dist
+COPY --from=builder /app/target/release/kattilakioski .
+COPY --from=builder /app/dist dist
 USER 1000
-CMD [ "/usr/local/bin/kattilakioski" ]
+CMD [ "./kattilakioski" ]
