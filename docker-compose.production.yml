@@ -8,5 +8,8 @@ services:
     depends_on:
       - postgres # Service defined in `docker-compose.yml`
     environment:
-      - RUST_LOG=info
+      - "RUST_LOG=info"
+      - "SESSION_SECRET=${SESSION_SECRET}"
+      - "SALT=${SALT}"
+      - "DATABASE_URL=${DATABASE_URL}"
     restart: unless-stopped

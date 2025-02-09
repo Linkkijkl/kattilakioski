@@ -8,7 +8,7 @@ use tokio::time::{self, Duration};
 use crate::models::Attachment;
 use crate::BB8Pool;
 
-const CRON_FREQUENCY: usize = 10;
+const CRON_FREQUENCY: usize = 300;
 
 /// Spawns a new task which invokes cron() periodically until `stop` equals true
 pub async fn start(stop_flag: Arc<AtomicBool>, pool: BB8Pool) -> Result<(), ()> {

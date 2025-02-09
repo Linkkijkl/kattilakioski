@@ -1,11 +1,25 @@
-const apiUrl = "/api";
+const apiUrl = '/api';
+const headers = { 'Content-Type': 'application/json' };
 
 type UserQuery = {
     username: string,
     password: string
 };
 
-let username: string | null = null;
+export const loginInfo = $state({ isLoggedIn: false, username: '' });
+
+
+/**
+ * Initializes API. Must be called before utilizing other API calls
+ * @returns 
+ */
+const init = async (): Promise<void> => {
+    try {
+        let user = await userInfo();
+    } catch (e) {
+        return;
+    }
+};
 
 /**
  * Logs user in with given information
@@ -13,12 +27,15 @@ let username: string | null = null;
  */
 const login = async (query: UserQuery): Promise<void> => {
     const response = await fetch(`${apiUrl}/user/login`, {
-        body: JSON.stringify(query)
+        body: JSON.stringify(query),
+        method: 'POST',
+        headers,
     });
     if (response.status != 200) {
         throw new Error(await response.text());
     }
-    username = query.username;
+    loginInfo.username = query.username;
+    loginInfo.isLoggedIn = true;
 };
 
 /**
@@ -29,7 +46,8 @@ const logout = async (): Promise<void> => {
     if (response.status != 200) {
         throw new Error(await response.text());
     }
-    username = null;
+    loginInfo.username = null;
+    loginInfo.isLoggedIn = false;
 };
 
 /**
@@ -38,7 +56,9 @@ const logout = async (): Promise<void> => {
  */
 const newUser = async (query: UserQuery): Promise<void> => {
     const response = await fetch(`${apiUrl}/user/new`, {
-        body: JSON.stringify(query)
+        body: JSON.stringify(query),
+        method: 'POST',
+        headers,
     });
     if (response.status != 200) {
         throw new Error(await response.text());
@@ -63,18 +83,6 @@ const userInfo = async (): Promise<User> => {
     }
     return await response.json();
 };
-
-/**
- * Returns username of user logged in. Faster than `userInfo()`.
- * @returns {string | null} Username of user logged in
- */
-//const getUsername = (): string | null => username;
-
-/**
- * Returns true if user is logged in. Faster than `userInfo()`.
- * @returns {boolean} Is user logged in
- */
-//const isLoggedIn = (): boolean => username != null;
 
 type ItemQuery = {
     search_term: string | null,
@@ -113,7 +121,8 @@ const getItems = async (query: ItemQuery | null = null): Promise<ItemResult[]> =
     }
     const response = await fetch(`${apiUrl}/item/list`, {
         body: JSON.stringify(query),
-        method: "POST",
+        method: 'POST',
+        headers,
     });
     if (response.status != 200) {
         throw new Error(await response.text());
@@ -138,7 +147,9 @@ type NewItemQuery = {
  */
 const newItem = async (query: NewItemQuery): Promise<ItemResult> => {
     const response = await fetch(`${apiUrl}/item/new`, {
-        body: JSON.stringify(query)
+        body: JSON.stringify(query),
+        method: 'POST',
+        headers,
     });
     if (response.status != 200) {
         throw new Error(await response.text());
@@ -153,7 +164,7 @@ const newItem = async (query: NewItemQuery): Promise<ItemResult> => {
  */
 const newAttachment = async (file: File): Promise<Attachment> => {
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append('file', file);
     const response = await fetch(`${apiUrl}/attachment/upload`, {
         body: formData
     });
@@ -174,12 +185,16 @@ type BuyQuery = {
  */
 const buy = async (query: BuyQuery): Promise<void> => {
     const response = await fetch(`${apiUrl}/item/buy`, {
-        body: JSON.stringify(query)
+        body: JSON.stringify(query),
+        method: 'POST',
+        headers,
     });
     if (response.status != 200) {
         throw new Error(await response.text());
     }
 };
 
-export { BuyQuery, ItemQuery, NewItemQuery, UserQuery,
-    login, logout, newUser, userInfo, /* getUsername, isLoggedIn, */ getItems, newItem, newAttachment, buy };
+export {
+    BuyQuery, ItemQuery, NewItemQuery, UserQuery,
+    login, logout, newUser, userInfo, init, getItems, newItem, newAttachment, buy
+};

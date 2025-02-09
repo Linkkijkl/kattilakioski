@@ -1,6 +1,6 @@
 <script lang='ts'>
     import ItemCard from "./ItemCard.svelte";
-    import { getItems } from "../api";
+    import { getItems } from "../api.svelte";
     let { searchTerm="" } = $props();
     let itemsPromise = getItems({search_term: searchTerm, limit: null, offset: null});
 </script>
