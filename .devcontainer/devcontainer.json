@@ -30,7 +30,8 @@
 				"rust-lang.rust-analyzer",
 				"tamasfe.even-better-toml",
 				"fill-labs.dependi",
-				"svelte.svelte-vscode"
+				"svelte.svelte-vscode",
+				"firefox-devtools.vscode-firefox-debug"
 			]
 		}
 	},

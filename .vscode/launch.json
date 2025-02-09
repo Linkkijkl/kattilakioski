@@ -49,23 +49,29 @@
         },
         {
             "command": "yarn dev",
-            "name": "Start frontend development server",
+            "name": "Frontend dev server",
             "request": "launch",
             "type": "node-terminal"
         },
         {
             "type":"chrome",
             "request":"launch",
-            "name":"Attach to Chrome debugger running frontend",
+            "name":"Chrome debugging",
             "url":"http://localhost:4000",
             "webRoot":"${workspaceFolder}/frontend"
         },
         {
             "type":"firefox",
             "request":"launch",
-            "name":"Attach to Firefox debugger running frontend",
+            "name":"Firefox debugging",
             "url":"http://localhost:4000",
             "webRoot":"${workspaceFolder}/frontend"
         },
+    ],
+    "compounds": [
+        {
+          "name": "Debug full stack",
+          "configurations": ["Debug backend", "Frontend dev server", "Firefox debugging"],
+        }
     ]
 }
