@@ -2,7 +2,7 @@
     import Button, { Label } from "@smui/button";
     import Textfield from "@smui/textfield";
 
-    import { loginInfo, login, newUser, logout, userInfo } from "../api.svelte";
+    import { userInfo, login, newUser, logout } from "../api.svelte";
 
     let usernameInput = $state("");
     let passwordInput = $state("");
@@ -11,7 +11,7 @@
     const loginSubmit = async (event: Event) => {
         event.preventDefault();
         try {
-            await login({"username": usernameInput, "password": passwordInput});
+            await login({ username: usernameInput, password: passwordInput });
         } catch (err) {
             error = err.toString();
         }
@@ -20,57 +20,56 @@
     const registerSumbit = async (event: Event) => {
         event.preventDefault();
         try {
-            await newUser({"username": usernameInput, "password": passwordInput});
+            await newUser({ username: usernameInput, password: passwordInput });
         } catch (err) {
             error = err.toString();
         }
     };
 </script>
 
-{#if !loginInfo.isLoggedIn}
-<form class="login-form" onsubmit={loginSubmit}>
-    <!-- Login form -->
-    <div>
-        <Textfield
-            type="username"
-            bind:value={usernameInput}
-            label="Username"
-            input$autocomplete="username"
-        >
-        </Textfield>
-    </div>
+{#if !userInfo.isLoggedIn}
+    <form class="login-form" onsubmit={loginSubmit}>
+        <!-- Login form -->
+        <div>
+            <Textfield
+                type="username"
+                bind:value={usernameInput}
+                label="Username"
+                input$autocomplete="username"
+            ></Textfield>
+        </div>
 
-    <div>
-        <Textfield
-            type="password"
-            bind:value={passwordInput}
-            label="Password"
-            input$autocomplete="new-password"
-        >
-        </Textfield>
-    </div>
+        <div>
+            <Textfield
+                type="password"
+                bind:value={passwordInput}
+                label="Password"
+                input$autocomplete="new-password"
+            ></Textfield>
+        </div>
 
-    <div class="row">
-        <Button variant="raised" type="submit">
-            <Label>Login</Label>
-        </Button>
-        <Button onclick={registerSumbit}>
-            <Label>Register</Label>
-        </Button>
-    </div>
+        <div class="row">
+            <Button variant="raised" type="submit">
+                <Label>Login</Label>
+            </Button>
+            <Button onclick={registerSumbit}>
+                <Label>Register</Label>
+            </Button>
+        </div>
 
-    {#if error.length != 0}
-    <p class="error">{error}</p>
-    {/if}
-</form>
+        {#if error.length != 0}
+            <p class="error">{error}</p>
+        {/if}
+    </form>
 {:else}
-<!-- User info -->
-<div class="login-form">
-    <p>Logged in as {loginInfo.username}</p>
-    <Button variant="raised" onclick={logout}>
-        <Label>Logout</Label>
-    </Button>
-</div>
+    <!-- User info -->
+    <div class="login-form">
+        <p>Logged in as {userInfo.username}</p><br/>
+        <p>Your balance: {userInfo.balance}€</p>
+        <Button variant="raised" onclick={logout}>
+            <Label>Logout</Label>
+        </Button>
+    </div>
 {/if}
 
 <style>

@@ -24,13 +24,13 @@
   import ItemListing from "./lib/ItemListing.svelte";
   import Login from "./lib/User.svelte";
   import Sell from "./lib/Sell.svelte";
-  import { init, loginInfo } from "./api.svelte";
+  import { update, userInfo } from "./api.svelte";
 
   let drawerOpen = $state(false);
   let view = $state("buy");
   const setView = (val: string) => (view = val);
 
-  init();
+  update();
 </script>
 
 <main>
@@ -76,7 +76,7 @@
             </Icon>
           </IconButton>
           <Text>
-            {#if loginInfo.isLoggedIn}
+            {#if userInfo.isLoggedIn}
               Profile
             {:else}
               Login

@@ -6,18 +6,20 @@ type UserQuery = {
     password: string
 };
 
-export const loginInfo = $state({ isLoggedIn: false, username: '' });
-
+export const userInfo = $state({ isLoggedIn: false, username: '', balance: "0" });
 
 /**
- * Initializes API. Must be called before utilizing other API calls
+ * Updates API runes with fresh information from the server
  * @returns 
  */
-const init = async (): Promise<void> => {
+const update = async (): Promise<void> => {
     try {
-        let user = await userInfo();
-    } catch (e) {
-        return;
+        const user: User = await userInfo();
+        userInfo.isLoggedIn = true;
+        userInfo.username = user.username;
+        userInfo.balance = (user.balance_cents / 100.0).toString();
+    } catch (err) {
+        userInfo.isLoggedIn = false;
     }
 };
 
@@ -34,8 +36,8 @@ const login = async (query: UserQuery): Promise<void> => {
     if (response.status != 200) {
         throw new Error(await response.text());
     }
-    loginInfo.username = query.username;
-    loginInfo.isLoggedIn = true;
+    userInfo.username = query.username;
+    userInfo.isLoggedIn = true;
 };
 
 /**
@@ -46,8 +48,8 @@ const logout = async (): Promise<void> => {
     if (response.status != 200) {
         throw new Error(await response.text());
     }
-    loginInfo.username = null;
-    loginInfo.isLoggedIn = false;
+    userInfo.username = null;
+    userInfo.isLoggedIn = false;
 };
 
 /**
@@ -76,7 +78,7 @@ type User = {
  * Retrieves user info
  * @returns {User} User information
  */
-const userInfo = async (): Promise<User> => {
+const getUserInfo = async (): Promise<User> => {
     const response = await fetch(`${apiUrl}/user/info`);
     if (response.status != 200) {
         throw new Error(await response.text());
@@ -197,5 +199,5 @@ const buy = async (query: BuyQuery): Promise<void> => {
 
 export {
     BuyQuery, ItemQuery, NewItemQuery, UserQuery,
-    login, logout, newUser, userInfo, init, getItems, newItem, newAttachment, buy
+    login, logout, newUser, getUserInfo, update, getItems, newItem, newAttachment, buy
 };

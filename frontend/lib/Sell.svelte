@@ -2,7 +2,7 @@
     import Button, { Label } from "@smui/button";
     import Textfield from "@smui/textfield";
     import ItemCard from "./ItemCard.svelte";
-    import { newAttachment, newItem } from "../api.svelte";
+    import { newAttachment, newItem, update } from "../api.svelte";
 
     let title = $state("");
     let description = $state("");
@@ -19,7 +19,9 @@
             try {
                 let response = await newAttachment(file);
                 attachments.push(response.id);
-                await newItem({title, amount, attachments, description, price})
+                await newItem({title, amount, attachments, description, price});
+                error = "Success!";
+                await update();
             } catch (err) {
                 error = err.toString();
             }
@@ -75,7 +77,7 @@
     </Button>
 
     {#if error.length != 0}
-    <p class="error">{error}</p>
+        <p class="error">{error}</p>
     {/if}
 </form>
 
