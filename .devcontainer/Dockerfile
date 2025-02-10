@@ -9,7 +9,8 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get purge -y imagemagick imagemagick-6-common
 
 # Install cargo watch
-RUN cargo install cargo-watch
+# (commented out because it's currently not building)
+#RUN cargo install cargo-watch
 
 # Install Diesel cli tools
 RUN cargo install diesel_cli
