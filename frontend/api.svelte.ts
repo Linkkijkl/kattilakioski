@@ -166,7 +166,8 @@ const newAttachment = async (file: File): Promise<Attachment> => {
     const formData = new FormData();
     formData.append('file', file);
     const response = await fetch(`${apiUrl}/attachment/upload`, {
-        body: formData
+        body: formData,
+        method: 'POST',
     });
     if (response.status != 200) {
         throw new Error(await response.text());

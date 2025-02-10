@@ -23,6 +23,7 @@
   import List, { Item, Text, Graphic, Separator, Subheader } from "@smui/list";
   import ItemListing from "./lib/ItemListing.svelte";
   import Login from "./lib/User.svelte";
+  import Sell from "./lib/Sell.svelte";
   import { init, loginInfo } from "./api.svelte";
 
   let drawerOpen = $state(false);
@@ -108,7 +109,7 @@
     {#if view === "buy"}
       <ItemListing />
     {:else if view === "sell"}
-      <p>Sell</p>
+      <Sell />
     {:else if view == "login"}
       <Login />
     {/if}

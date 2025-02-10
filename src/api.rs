@@ -612,12 +612,14 @@ pub async fn upload(
     let thumbnail = img.thumbnail(THUMBNAIL_SIZE, THUMBNAIL_SIZE);
     let thumbnail_bytes = webp::Encoder::from_image(&thumbnail)
         .unwrap()
-        .encode(THUMBNAIL_QUALITY)
-        .to_vec();
-    File::create(&thumbnail_path)
+        .encode(THUMBNAIL_QUALITY);
+    let mut file = File::create(&thumbnail_path)
         .await
-        .map_err(error::ErrorInternalServerError)?
-        .write_all(&thumbnail_bytes)
+        .map_err(error::ErrorInternalServerError)?;
+    file.write_all(&thumbnail_bytes)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+    file.flush()
         .await
         .map_err(error::ErrorInternalServerError)?;
 
@@ -929,7 +931,7 @@ mod tests {
 
         // Generate test images
         let random_image_generator = || {
-            ImageBuffer::from_fn(512, 512, |_, _| {
+            ImageBuffer::from_fn(2000, 1500, |_, _| {
                 let a = || random::<u8>() % 255_u8;
                 image::Rgb([a(), a(), a()])
             })
