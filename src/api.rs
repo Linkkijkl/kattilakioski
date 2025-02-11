@@ -334,7 +334,7 @@ pub async fn new_item(
     query: web::Json<NewItemQuery>,
     session: Session,
 ) -> Result<HttpResponse, Error> {
-    use crate::schema::{attachments, items, users};
+    use crate::schema::{attachments, items};
 
     // Limits
     const MAX_TITLE_LENGTH: usize = 50;
@@ -393,7 +393,7 @@ pub async fn new_item(
     // Aquire db connection hande only when needed, to avoid aquiring it for no use on bad user input
     let mut con = pool.get().await.map_err(error::ErrorInternalServerError)?;
 
-    // Validate that all referenced attachments
+    // Validate referenced attachments
     let referenced_attachments = attachments::table
         .select(Attachment::as_select())
         .filter(attachments::columns::id.eq_any(&item_attachments))
@@ -408,7 +408,7 @@ pub async fn new_item(
             .filter(|a| !item_attachments.contains(&a.id))
             .map(|a| &a.id)
             .join(", ");
-        return Err(error::ErrorBadRequest(format!("Following attachments could not be used: {missing_attachments}. Try to uploading them again.")));
+        return Err(error::ErrorBadRequest(format!("Following attachments could not be used: {missing_attachments}. Try uploading them again.")));
     }
 
     // Insert item into db
@@ -434,17 +434,6 @@ pub async fn new_item(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    // Add appropriate amount of cents to sellers balance
-    diesel::update(users::table)
-        .filter(users::columns::id.eq(user_id))
-        .set(
-            users::columns::balance_cents
-                .eq(users::columns::balance_cents + item_price_cents * item_amount),
-        )
-        .execute(&mut con)
-        .await
-        .map_err(error::ErrorInternalServerError)?;
-
     Ok(HttpResponse::Ok().json(ItemResult { attachments, item }))
 }
 
@@ -463,7 +452,7 @@ pub async fn buy_item(
     use crate::schema::{items, transactions, users};
 
     // Gather and validate input
-    let user_id =
+    let buyer_id =
         get_login_uid(&session)?.ok_or_else(|| error::ErrorUnauthorized("Not logged in"))?;
     let item_id = query.item_id;
     let item_amount = query.amount.unwrap_or(1);
@@ -489,9 +478,9 @@ pub async fn buy_item(
                 }
                 let total_price = item_amount * item.price_cents;
 
-                // Same for user
+                // Same for both parties of the transaction
                 let users = users::table
-                    .filter(users::columns::id.eq(user_id))
+                    .filter(users::columns::id.eq(buyer_id))
                     .select(User::as_select())
                     .load(con)
                     .await?;
@@ -502,27 +491,36 @@ pub async fn buy_item(
                 if user.balance_cents < total_price {
                     return Ok(Err("You don't have enough balance on your account"));
                 }
+                let seller_id = item.seller_id; // The relation guarantees that seller exists if the item pointing to it does
 
-                // All checks ok, do the transaction
+                // All checks ok, make the transaction
                 try_join!(
-                    // Update item
+                    // Remove items from stock
                     diesel::update(items::table)
                         .filter(items::columns::id.eq(item_id))
                         .set(items::columns::amount.eq(items::columns::amount - item_amount))
                         .execute(con),
-                    // Update user
+                    // Remove balance from the buyers account
                     diesel::update(users::table)
-                        .filter(users::columns::id.eq(user_id))
+                        .filter(users::columns::id.eq(buyer_id))
                         .set(
                             users::columns::balance_cents
                                 .eq(users::columns::balance_cents - total_price)
                         )
                         .execute(con),
+                    // Append balance to the sellers account
+                    diesel::update(users::table)
+                        .filter(users::columns::id.eq(seller_id))
+                        .set(
+                            users::columns::balance_cents
+                                .eq(users::columns::balance_cents + total_price)
+                        )
+                        .execute(con),
                     // Log transaction
                     diesel::insert_into(transactions::table)
                         .values((
-                            transactions::columns::item_id.eq(item_id),
-                            transactions::columns::buyer_id.eq(user_id),
+                            transactions::columns::item_id.eq(item_id), // Seller id is deductible from this
+                            transactions::columns::buyer_id.eq(buyer_id),
                             transactions::columns::item_amount.eq(item_amount),
                             transactions::columns::transacted_at.eq(chrono::offset::Utc::now()),
                         ))
@@ -536,10 +534,10 @@ pub async fn buy_item(
 
     // Propagate errors from transaction
     result
-        .map_err(error::ErrorInternalServerError)?
-        .map_err(error::ErrorBadRequest)?;
+        .map_err(error::ErrorInternalServerError)? // Error executing the transaction
+        .map_err(error::ErrorBadRequest)?; // Error from inside of the transaction
 
-    // If we got here, the transaction was a success
+    // If we got here the transaction was a success
     Ok(HttpResponse::Ok().body("OK"))
 }
 
@@ -575,7 +573,7 @@ pub async fn upload(
         .ok_or_else(|| error::ErrorBadRequest("No file name provided with file"))?;
     let extension = Path::new(&file_name)
         .extension()
-        .ok_or_else(|| error::ErrorBadRequest("File name does not contain file extension"))?
+        .ok_or_else(|| error::ErrorBadRequest("File name does not contain extension"))?
         .to_string_lossy()
         .into_owned();
     if !EXTENSIONS.contains(&extension.as_str()) {
@@ -667,8 +665,8 @@ pub fn config(cfg: &mut web::ServiceConfig) {
             .service(buy_item)
             .app_data(
                 MultipartFormConfig::default()
-                    .total_limit(10 * 1024 * 1024 /* 10MiB */)
-                    .memory_limit(256 /* allow for almost no memory usage */),
+                    .total_limit(10 * 1024 * 1024) // 10MiB maximum file upload size
+                    .memory_limit(256), // Allow for almost no memory usage
             )
             .service(upload),
     );
