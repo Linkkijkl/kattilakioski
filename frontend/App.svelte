@@ -18,19 +18,19 @@
     Header,
     Title as DrawerTitle,
     Subtitle,
-    Scrim,
   } from "@smui/drawer";
   import List, { Item, Text, Graphic, Separator, Subheader } from "@smui/list";
   import ItemListing from "./lib/ItemListing.svelte";
   import Login from "./lib/User.svelte";
   import Sell from "./lib/Sell.svelte";
-  import { update, userInfo } from "./api.svelte";
+  import { updateAPI, userInfo } from "./api.svelte";
+  import { onMount } from "svelte";
 
   let drawerOpen = $state(false);
   let view = $state("buy");
   const setView = (val: string) => (view = val);
 
-  update();
+  onMount(updateAPI);
 </script>
 
 <main>
@@ -97,6 +97,12 @@
           </IconButton>
           <TopAppBarTitle>Kattilakioski</TopAppBarTitle>
         </Section>
+        {#if userInfo.isLoggedIn} 
+        <Section align="end" toolbar>
+          { userInfo.username }
+          { userInfo.balance }€
+        </Section>
+        {/if}
         <Section align="end" toolbar>
           <IconButton aria-label="Search">
             <Icon tag="svg" viewBox="0 0 24 24">

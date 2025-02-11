@@ -2,7 +2,8 @@
     import Button, { Label } from "@smui/button";
     import Textfield from "@smui/textfield";
 
-    import { userInfo, login, newUser, logout } from "../api.svelte";
+    import { userInfo, login, newUser, logout, updateAPI } from "../api.svelte";
+    import { onMount } from "svelte";
 
     let usernameInput = $state("");
     let passwordInput = $state("");
@@ -25,6 +26,8 @@
             error = err.toString();
         }
     };
+
+    onMount(updateAPI);
 </script>
 
 {#if !userInfo.isLoggedIn}

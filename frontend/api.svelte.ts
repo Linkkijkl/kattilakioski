@@ -10,15 +10,15 @@ export const userInfo = $state({ isLoggedIn: false, username: '', balance: "0" }
 
 /**
  * Updates API runes with fresh information from the server
- * @returns 
  */
-const update = async (): Promise<void> => {
+const updateAPI = async (): Promise<void> => {
     try {
-        const user: User = await userInfo();
+        const user: User = await getUserInfo();
         userInfo.isLoggedIn = true;
         userInfo.username = user.username;
         userInfo.balance = (user.balance_cents / 100.0).toString();
     } catch (err) {
+        console.log(err.toString());
         userInfo.isLoggedIn = false;
     }
 };
@@ -199,5 +199,5 @@ const buy = async (query: BuyQuery): Promise<void> => {
 
 export {
     BuyQuery, ItemQuery, NewItemQuery, UserQuery,
-    login, logout, newUser, getUserInfo, update, getItems, newItem, newAttachment, buy
+    login, logout, newUser, getUserInfo, updateAPI, getItems, newItem, newAttachment, buy
 };
