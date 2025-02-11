@@ -9,8 +9,10 @@
 		ActionIcons,
 	} from "@smui/card";
 	import Button, { Label } from "@smui/button";
-	import IconButton, { Icon } from "@smui/icon-button";
-	import LayoutGrid, { Cell } from "@smui/layout-grid";
+    import { buyItem, updateAPI } from "../api.svelte";
+    import { createEventDispatcher } from "svelte";
+
+	const dispatch = createEventDispatcher();
 
 	let {
 		title = "no title",
@@ -19,11 +21,18 @@
 		price = NaN,
 		stock = NaN,
 		preview = false,
+		id = NaN,
 	} = $props();
 
-	const buy = () => {
-		console.log("Not implemented!");
-	}
+	const buy = async () => {
+		try {
+			await buyItem({amount: 1, item_id: id});
+			dispatch("buyEvent");
+		} catch (err) {
+			alert(err.toString());
+		}
+		await updateAPI();
+	};
 </script>
 
 <div class="card-display">

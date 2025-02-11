@@ -186,7 +186,7 @@ type BuyQuery = {
  * Buys an item
  * @param {BuyQuery} query Item id and amount to be bought
  */
-const buy = async (query: BuyQuery): Promise<void> => {
+const buyItem = async (query: BuyQuery): Promise<void> => {
     const response = await fetch(`${apiUrl}/item/buy`, {
         body: JSON.stringify(query),
         method: 'POST',
@@ -197,7 +197,9 @@ const buy = async (query: BuyQuery): Promise<void> => {
     }
 };
 
+export type {
+    BuyQuery, ItemQuery, NewItemQuery, UserQuery, ItemResult
+};
 export {
-    BuyQuery, ItemQuery, NewItemQuery, UserQuery,
-    login, logout, newUser, getUserInfo, updateAPI, getItems, newItem, newAttachment, buy
+    login, logout, newUser, getUserInfo, updateAPI, getItems, newItem, newAttachment, buyItem
 };
