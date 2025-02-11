@@ -89,7 +89,8 @@ const getUserInfo = async (): Promise<User> => {
 type ItemQuery = {
     search_term: string | null,
     offset: number | null,
-    limit: number | null
+    limit: number | null,
+    get_items_without_stock: boolean | null,
 };
 
 type Attachment = {
@@ -119,7 +120,7 @@ type ItemResult = {
  */
 const getItems = async (query: ItemQuery | null = null): Promise<ItemResult[]> => {
     if (query == null) {
-        query = { limit: null, offset: null, search_term: null };
+        query = { limit: null, offset: null, search_term: null, get_items_without_stock: false };
     }
     const response = await fetch(`${apiUrl}/item/list`, {
         body: JSON.stringify(query),

@@ -205,6 +205,7 @@ struct ItemQuery {
     search_term: Option<String>,
     offset: Option<i64>,
     limit: Option<i64>,
+    get_items_without_stock: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -226,6 +227,7 @@ pub async fn get_items(
     // Default values
     let mut offset = 0;
     let mut limit = 20;
+    let mut minimum_stock = 1;
 
     // Limits
     const SEARCH_MAX_LENGTH: usize = 50;
@@ -270,6 +272,9 @@ pub async fn get_items(
             }
             limit = val.to_owned();
         }
+        if let Some(true) = &query.get_items_without_stock {
+            minimum_stock = 0;
+        }
     }
 
     // Query db and return results
@@ -277,6 +282,7 @@ pub async fn get_items(
         .offset(offset)
         .limit(limit)
         .select(Item::as_select())
+        .filter(amount.ge(minimum_stock))
         .load(&mut con)
         .await
         .map_err(error::ErrorInternalServerError)?;
@@ -874,6 +880,7 @@ mod tests {
                 search_term: Some("best".to_string()),
                 limit: None,
                 offset: None,
+                get_items_without_stock: None,
             })
             .send()?;
         let items: Vec<Item> = result.json()?;
