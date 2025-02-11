@@ -150,12 +150,52 @@ pub async fn logout(session: Session) -> Result<HttpResponse, Error> {
     }
 }
 
-#[get("/user/info")]
-pub async fn user_info(pool: web::Data<BB8Pool>, session: Session) -> Result<HttpResponse, Error> {
+#[derive(Serialize, Deserialize)]
+enum GetUserQuery {
+    Username(String),
+    UserId(i32),
+}
+
+#[post("/user")]
+pub async fn user_info(
+    pool: web::Data<BB8Pool>,
+    query: Option<web::Json<GetUserQuery>>,
+    session: Session,
+) -> Result<HttpResponse, Error> {
     use crate::schema::users::dsl::*;
 
-    let uid = get_login_uid(&session)?.ok_or_else(|| error::ErrorUnauthorized("Not logged in"))?;
     let mut con = pool.get().await.map_err(error::ErrorInternalServerError)?;
+
+    // Aquire a valid user id
+    let uid: i32 = match query {
+        Some(query) => {
+            // Get valid user id for query
+            let mut db_query = users.into_boxed();
+            match query.0 {
+                GetUserQuery::UserId(user_id) => {
+                    // Validate user id if one was provided
+                    db_query = db_query.filter(id.eq(user_id));
+                }
+                GetUserQuery::Username(uname) => {
+                    // Get a valid user id for username if one was provided
+                    db_query = db_query.filter(username.eq(uname));
+                }
+            };
+            let result = db_query
+                .select(User::as_select())
+                .load(&mut con)
+                .await
+                .map_err(error::ErrorInternalServerError)?;
+            match &result[..] {
+                [user] => user.id,
+                _ => return Err(error::ErrorBadRequest("User not found")),
+            }
+        }
+        None => {
+            // Get currently logged in users id if no query was provided
+            get_login_uid(&session)?.ok_or_else(|| error::ErrorUnauthorized("Not logged in"))?
+        }
+    };
 
     let user = users
         .filter(id.eq(uid))
@@ -166,7 +206,7 @@ pub async fn user_info(pool: web::Data<BB8Pool>, session: Session) -> Result<Htt
     Ok(HttpResponse::Ok().json(user))
 }
 
-#[get("/debug/db/clear")]
+#[get("/admin/db/clear")]
 pub async fn clear_db(pool: web::Data<BB8Pool>) -> Result<HttpResponse, Error> {
     use crate::schema::attachments::dsl::*;
     use crate::schema::items::dsl::*;
@@ -180,6 +220,7 @@ pub async fn clear_db(pool: web::Data<BB8Pool>) -> Result<HttpResponse, Error> {
         ));
     }
 
+    // Aquire db connection handle
     let mut con = pool.get().await.map_err(error::ErrorInternalServerError)?;
 
     // Remove everything ( in correct order! )

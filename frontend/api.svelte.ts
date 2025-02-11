@@ -76,14 +76,35 @@ type User = {
 
 /**
  * Retrieves user info
+ * @param {Number | string | null} user
+ *      Username or user id to get info for.
+ *      Set null to get info for currently logged in user.
  * @returns {User} User information
  */
-const getUserInfo = async (): Promise<User> => {
-    const response = await fetch(`${apiUrl}/user/info`);
-    if (response.status != 200) {
-        throw new Error(await response.text());
+const getUserInfo = async (user: number | string | null = null): Promise<User> => {
+    // Return info for self if no user was provided
+    if (user == null) {
+        const response = await fetch(`${apiUrl}/user`);
+        if (response.status != 200) {
+            throw new Error(await response.text());
+        }
+        return await response.json();
     }
-    return await response.json();
+
+    // Construct query from provided username or user id
+    let body: any;
+    if (isNaN(+user)) {
+        body = { 'Username': user };
+    } else {
+        body = { 'UserId': user };
+    }
+
+    // Get info for provided user
+    const response = await fetch(`${apiUrl}/user`, {
+        body: JSON.stringify(body),
+        method: 'POST',
+        headers,
+    });
 };
 
 type ItemQuery = {
