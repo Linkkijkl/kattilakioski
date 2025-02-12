@@ -242,6 +242,56 @@ pub async fn clear_db(pool: web::Data<BB8Pool>) -> Result<HttpResponse, Error> {
 }
 
 #[derive(Serialize, Deserialize)]
+struct AdminGiveQuery {
+    user_id: Option<i32>,
+    amount_cents: i32,
+}
+
+#[post("/admin/give")]
+pub async fn give_balance(pool: web::Data<BB8Pool>, query: web::Json<AdminGiveQuery>, session: Session) -> Result<HttpResponse, Error> {
+    use crate::schema::users::dsl::*;
+    
+    // Prevent access when not running a debug build
+    if !cfg!(debug_assertions) {
+        return Err(error::ErrorNotFound(
+            "Feature only available in debug builds",
+        ));
+    }
+
+    let mut con = pool.get().await.map_err(error::ErrorInternalServerError)?;
+
+    let uid: i32 = match query.user_id {
+        Some(user_id) => {
+            // Validate provided user id
+            let result = users
+                .filter(id.eq(user_id))
+                .select(User::as_select())
+                .load(&mut con)
+                .await
+                .map_err(error::ErrorInternalServerError)?;
+            if let [_] = &result[..] {
+                user_id
+            } else {
+                return Err(error::ErrorBadRequest("User not found"));
+            }
+        },
+        None => {
+            // Get currently logged in users id if no query was provided
+            get_login_uid(&session)?.ok_or_else(|| error::ErrorUnauthorized("Not logged in"))?
+        }
+    };
+
+    diesel::update(users)
+        .filter(id.eq(uid))
+        .set(balance_cents.eq(balance_cents + query.amount_cents))
+        .execute(&mut con)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    Ok(HttpResponse::Ok().body("OK"))
+}
+
+#[derive(Serialize, Deserialize)]
 struct ItemQuery {
     search_term: Option<String>,
     offset: Option<i64>,
@@ -701,6 +751,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
             .service(user_info)
             .service(new_user)
             .service(clear_db)
+            .service(give_balance)
             .service(get_items)
             .service(new_item)
             .service(buy_item)
@@ -745,7 +796,7 @@ mod tests {
     #[test]
     fn api_is_responsive() -> Result<()> {
         let status = reqwest::blocking::get(format!("{URL}/api/hello"))?.status();
-        assert_eq!(status, 200, "Could not reach API. Make sure server is running and available in `{URL}` before running tests.");
+        assert_eq!(status, 200, "Could not reach API. Make sure the backend is running and available in `{URL}` before running tests.");
         Ok(())
     }
 
