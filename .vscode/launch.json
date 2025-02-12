@@ -41,7 +41,9 @@
                     "kind": "bin"
                 }
             },
-            "args": [],
+            "args": [
+                "--test-threads=1"
+            ],
             "env": {
                 "RUST_LOG": "debug"
             },
@@ -72,6 +74,7 @@
         {
           "name": "Debug full stack",
           "configurations": ["Debug backend", "Frontend dev server", "Firefox debugging"],
+          "stopAll": true
         }
     ]
 }

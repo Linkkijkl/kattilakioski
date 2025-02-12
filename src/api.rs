@@ -585,7 +585,7 @@ pub async fn buy_item(
                 if user.balance_cents < total_price {
                     return Ok(Err("You don't have enough balance on your account"));
                 }
-                let seller_id = item.seller_id; // The relation guarantees that seller exists if the item pointing to it does
+                let seller_id = item.seller_id; // Relation guarantees that the seller exists if the item referring to it does
 
                 // All checks ok, make the transaction
                 try_join!(
@@ -881,7 +881,7 @@ mod tests {
         };
 
         // Clear database for testing
-        let result = client.get(format!("{URL}/api/debug/db/clear")).send()?;
+        let result = client.get(format!("{URL}/api/admin/db/clear")).send()?;
         assert_eq!(
             result.status(),
             200,
@@ -910,7 +910,7 @@ mod tests {
         // println!("{:?}", cookie_provider);
 
         // Get user info
-        let result = client.get(format!("{URL}/api/user/info")).send()?;
+        let result = client.post(format!("{URL}/api/user")).send()?;
         assert_eq!(result.status(), 200, "Could not get user info");
 
         // Log user out
@@ -918,11 +918,11 @@ mod tests {
         assert_eq!(result.status(), 200, "Could not log out");
 
         // Get user info without a valid session
-        let result = client.get(format!("{URL}/api/user/info")).send()?;
+        let result = client.post(format!("{URL}/api/user")).send()?;
         assert_ne!(
             result.status(),
             200,
-            "User info returned wrong status without valid session"
+            "User info returned wrong status without a valid session"
         );
 
         // Log out without a valid session
@@ -930,7 +930,7 @@ mod tests {
         assert_ne!(
             result.status(),
             200,
-            "Logout returned wrong status without valid session"
+            "Logout returned wrong status without a valid session"
         );
 
         Ok(())
@@ -950,7 +950,7 @@ mod tests {
             .build()?;
 
         // Clear database for testing
-        let result = client.get(format!("{URL}/api/debug/db/clear")).send()?;
+        let result = client.get(format!("{URL}/api/admin/db/clear")).send()?;
         assert_eq!(
             result.status(),
             200,
@@ -1012,12 +1012,28 @@ mod tests {
             balance_cents: u32,
         }
 
-        // Test user balances
-        let result = client.get(format!("{URL}/api/user/info")).send()?;
+        // Test giving currency
+        let result = client.post(format!("{URL}/api/admin/give"))
+            .json(&AdminGiveQuery{
+                user_id: Some(item.seller_id),
+                amount_cents: 333,
+            })
+            .send()?;
+        assert_eq!(result.status(), 200, "Could not add balance to user");
+        
+        let result = client2.post(format!("{URL}/api/admin/give"))
+            .json(&AdminGiveQuery{
+                user_id: Some(item2.seller_id),
+                amount_cents: 250,
+            })
+            .send()?;
+        assert_eq!(result.status(), 200, "Could not add balance to user");
+
+        let result = client.post(format!("{URL}/api/user")).send()?;
         let user: TestUserQuery = result.json()?;
         assert_eq!(user.balance_cents, 333, "User has unexpected balance");
 
-        let result = client2.get(format!("{URL}/api/user/info")).send()?;
+        let result = client2.post(format!("{URL}/api/user")).send()?;
         let user: TestUserQuery = result.json()?;
         assert_eq!(user.balance_cents, 250, "User has unexpected balance");
 
@@ -1064,15 +1080,15 @@ mod tests {
         assert_eq!(result.status(), 200, "Second user could not buy an item");
 
         // Are user balances correct after buying
-        let result = client.get(format!("{URL}/api/user/info")).send()?;
+        let result = client.post(format!("{URL}/api/user")).send()?;
         let user: TestUserQuery = result.json()?;
-        assert_eq!(user.balance_cents, 333 - 250, "User has unexpected balance");
+        assert_eq!(user.balance_cents, 333 - 250 + 111 * 2, "User has unexpected balance");
 
-        let result = client2.get(format!("{URL}/api/user/info")).send()?;
+        let result = client2.post(format!("{URL}/api/user")).send()?;
         let user: TestUserQuery = result.json()?;
         assert_eq!(
             user.balance_cents,
-            250 - 111 * 2,
+            250 - 111 * 2 + 250,
             "User has unexpected balance"
         );
 
@@ -1108,7 +1124,7 @@ mod tests {
         image2.save(&attachment_path2).unwrap();
 
         // Clear database for testing
-        let result = client.get(format!("{URL}/api/debug/db/clear")).send()?;
+        let result = client.get(format!("{URL}/api/admin/db/clear")).send()?;
         assert_eq!(
             result.status(),
             200,
