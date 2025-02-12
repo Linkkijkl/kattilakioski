@@ -21,6 +21,11 @@ struct UploadForm {
     file: TempFile,
 }
 
+/// Uploads an attachment via multipart form. The provided form must contain
+/// a field named "file" with the attachment as content. The endpoint returns
+/// information on the newly created attachment, such as an attachment id,
+/// which can later be used to link uploaded attachment to an item listing.
+/// Cron will take care of removing old attachments not bound to items.
 #[post("/attachment/upload")]
 pub async fn upload(
     pool: web::Data<BB8Pool>,

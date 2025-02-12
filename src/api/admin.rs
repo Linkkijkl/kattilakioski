@@ -12,6 +12,7 @@ use crate::api::user::get_login_uid;
 use crate::models::User;
 use crate::BB8Pool;
 
+/// Clears the whole database. This endpoint is only accessible in debug builds.
 #[get("/admin/db/clear")]
 pub async fn clear_db(pool: web::Data<BB8Pool>) -> Result<HttpResponse, Error> {
     use crate::schema::attachments::dsl::*;
@@ -53,6 +54,9 @@ pub struct AdminGiveQuery {
     pub amount_cents: i32,
 }
 
+/// Appends given amount of cents to users balance. If the user is not
+/// specified, currently logged in user is used. Note that this endpoint
+/// can also be used to reduct balance by providing negative values.
 #[post("/admin/give")]
 pub async fn give_balance(
     pool: web::Data<BB8Pool>,

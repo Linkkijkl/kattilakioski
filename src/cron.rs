@@ -9,6 +9,8 @@ use crate::models::Attachment;
 use crate::BB8Pool;
 
 const CRON_FREQUENCY: usize = 300;
+/// Remove dangling attachments after they are older than this, in seconds
+const DANGLING_ATTACHMENT_TIMEOUT: u64 = 60 * 10;
 
 /// Spawns a new task which invokes cron() periodically until `stop` equals true
 pub async fn start(stop_flag: Arc<AtomicBool>, pool: BB8Pool) -> Result<(), ()> {
@@ -36,7 +38,6 @@ async fn cron(pool: BB8Pool) -> Result<(), String> {
     let mut con = pool.get().await.map_err(|a| a.to_string())?;
 
     // Remove old enough attachments not bound to any item
-    const DANGLING_ATTACHMENT_TIMEOUT: u64 = 60 * 10;
     let now = chrono::offset::Utc::now();
     let oldest_accepted_timestamp = now - Duration::from_secs(DANGLING_ATTACHMENT_TIMEOUT);
 

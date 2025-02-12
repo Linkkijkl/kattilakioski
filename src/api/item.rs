@@ -29,6 +29,10 @@ struct ItemResult {
     attachments: Vec<Attachment>,
 }
 
+/// Lists items for sale. The endpoint can filter results by a search
+/// term and get results regardless of if they are in stock. It can also
+/// limit the amount of returned items and skip an amount of items from
+/// being returned, which can be used to implement pages in the frontend.
 #[post("/item/list")]
 pub async fn get_items(
     pool: web::Data<BB8Pool>,
@@ -124,7 +128,7 @@ pub struct NewItemQuery {
     pub attachments: Vec<i32>,
 }
 
-// Parses string of form 1.23 to number like 123, see tests
+/// Parses string of form 1.23 to number like 123, see tests
 fn parse_decimal_to_cents(string: String) -> Result<u32, ()> {
     let split: Vec<&str> = string.split(['.', ',']).collect();
     let flattened = split.concat();
@@ -142,6 +146,7 @@ fn parse_decimal_to_cents(string: String) -> Result<u32, ()> {
     Ok(cents)
 }
 
+/// Enlists a new item for sale.
 #[post("/item/new")]
 pub async fn new_item(
     pool: web::Data<BB8Pool>,
@@ -257,6 +262,7 @@ struct BuyQuery {
     amount: Option<i32>,
 }
 
+/// Buys an item.
 #[post("/item/buy")]
 pub async fn buy_item(
     pool: web::Data<BB8Pool>,

@@ -19,6 +19,7 @@ pub struct UserQuery {
     pub password: String,
 }
 
+/// Retrieves user id from cookie session
 pub fn get_login_uid(session: &Session) -> Result<Option<i32>, Error> {
     session
         .get::<i32>(LOGGED_IN_KEY)
@@ -43,7 +44,7 @@ static SALT: LazyLock<String> = LazyLock::new(|| match std::env::var("SALT") {
     }
 });
 
-// Hash password with salt
+/// Hash password with salt
 fn hash(pass: &str) -> String {
     let mut hasher = blake3::Hasher::new();
     hasher.update(SALT.as_bytes());
@@ -51,6 +52,7 @@ fn hash(pass: &str) -> String {
     hasher.finalize().to_string()
 }
 
+/// Registers a new user to the database.
 #[post("/user/new")]
 pub async fn new_user(
     pool: web::Data<BB8Pool>,
@@ -99,6 +101,7 @@ pub async fn new_user(
     Ok(HttpResponse::Ok().body("OK"))
 }
 
+/// Logs user in and saves session into a cookie.
 #[post("/user/login")]
 pub async fn login(
     pool: web::Data<BB8Pool>,
@@ -126,6 +129,7 @@ pub async fn login(
     Err(error::ErrorUnauthorized("Incorrect login"))
 }
 
+/// Logs user out.
 #[get("/user/logout")]
 pub async fn logout(session: Session) -> Result<HttpResponse, Error> {
     if session.remove(LOGGED_IN_KEY).is_some() {
@@ -141,6 +145,8 @@ enum GetUserQuery {
     UserId(i32),
 }
 
+/// Returns info for a given user. If no user is provided, the endpoint
+/// will use the user currently logged in.
 #[post("/user")]
 pub async fn user_info(
     pool: web::Data<BB8Pool>,

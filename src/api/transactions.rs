@@ -17,6 +17,9 @@ enum LogQuery {
     ForEveryone,
 }
 
+/// Returns a transaction log for a given user. If no user is provided,
+/// the endpoint will use the user currently logged in. It's possible
+/// to list logs for everyone, but only in debug builds.
 #[post("/log")]
 pub async fn get_transactions(
     pool: web::Data<BB8Pool>,
