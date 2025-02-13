@@ -12,6 +12,7 @@ pub struct User {
     pub password_hash: String,
     pub balance_cents: i32,
     pub created_at: chrono::DateTime<chrono::Local>,
+    pub is_admin: bool,
 }
 
 #[derive(Queryable, Selectable, Identifiable, Associations, Debug, PartialEq)]

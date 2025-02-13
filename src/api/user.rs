@@ -73,7 +73,6 @@ pub async fn new_user(
     // Check if username is already registered
     let results = users
         .filter(username.eq(&query.username))
-        .limit(1)
         .select(User::as_select())
         .load(&mut con)
         .await
@@ -114,7 +113,6 @@ pub async fn login(
 
     let results = users
         .filter(username.eq(&query.username))
-        .limit(1)
         .select(User::as_select())
         .load(&mut con)
         .await

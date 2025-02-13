@@ -277,6 +277,7 @@ pub async fn buy_item(
     let item_id = query.item_id;
     let item_amount = query.amount.unwrap_or(1);
 
+    // Aquire db connection handle
     let mut con = pool.get().await.map_err(error::ErrorInternalServerError)?;
 
     // Run the whole buy operation inside a transaction to prevent double spending

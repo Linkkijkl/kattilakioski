@@ -12,7 +12,7 @@ const CRON_FREQUENCY: usize = 300;
 /// Remove dangling attachments after they are older than this, in seconds
 const DANGLING_ATTACHMENT_TIMEOUT: u64 = 60 * 10;
 
-/// Spawns a new task which invokes cron() periodically until `stop` equals true
+/// Spawns a new task which invokes cron() periodically until `stop` evaluates true
 pub async fn start(stop_flag: Arc<AtomicBool>, pool: BB8Pool) -> Result<(), ()> {
     let mut counter: usize = 0;
     let mut interval = time::interval(Duration::from_secs(1));

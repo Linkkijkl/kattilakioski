@@ -12,6 +12,32 @@ use crate::api::user::get_login_uid;
 use crate::models::User;
 use crate::BB8Pool;
 
+/// Returns Ok(true) if session user is admin, Ok(false) if not
+pub async fn session_is_admin(session: &Session, pool: web::Data<BB8Pool>) -> Result<bool, Error> {
+    use crate::schema::users::dsl::*;
+
+    let uid = if let Ok(Some(uid)) = get_login_uid(session) {
+        uid
+    } else {
+        return Err(error::ErrorBadRequest("Not logged in"));
+    };
+
+    // Aquire connection to db
+    let mut con = pool.get().await.map_err(error::ErrorInternalServerError)?;
+
+    let result = users
+        .filter(id.eq(uid))
+        .select(User::as_select())
+        .load(&mut con)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+    if let [user] = &result[..] {
+        Ok(user.is_admin)
+    } else {
+        Err(error::ErrorBadRequest("User not found"))
+    }
+}
+
 /// Clears the whole database. This endpoint is only accessible in debug builds.
 #[get("/admin/db/clear")]
 pub async fn clear_db(pool: web::Data<BB8Pool>) -> Result<HttpResponse, Error> {
@@ -72,6 +98,7 @@ pub async fn give_balance(
         ));
     }
 
+    // Aquire db connection handle
     let mut con = pool.get().await.map_err(error::ErrorInternalServerError)?;
 
     let uid: i32 = match query.user_id {
@@ -98,6 +125,38 @@ pub async fn give_balance(
     diesel::update(users)
         .filter(id.eq(uid))
         .set(balance_cents.eq(balance_cents + query.amount_cents))
+        .execute(&mut con)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    Ok(HttpResponse::Ok().body("OK"))
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct AdminPromoteQuery {
+    pub user_id: i32,
+}
+
+/// Promotes given user to admin status. Requires a session with admin
+/// level privileges.
+#[post("/admin/promote")]
+pub async fn promote(
+    pool: web::Data<BB8Pool>,
+    query: web::Json<AdminPromoteQuery>,
+    session: Session,
+) -> Result<HttpResponse, Error> {
+    use crate::schema::users::dsl::*;
+
+    if !session_is_admin(&session, pool.clone()).await? {
+        return Err(error::ErrorForbidden("Insufficent privileges"));
+    }
+
+    // Aquire db connection handle
+    let mut con = pool.get().await.map_err(error::ErrorInternalServerError)?;
+
+    diesel::update(users)
+        .filter(id.eq(query.user_id))
+        .set(is_admin.eq(true))
         .execute(&mut con)
         .await
         .map_err(error::ErrorInternalServerError)?;
