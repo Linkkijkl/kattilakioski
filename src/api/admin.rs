@@ -163,3 +163,69 @@ pub async fn promote(
 
     Ok(HttpResponse::Ok().body("OK"))
 }
+
+#[cfg(test)]
+mod tests {
+    use reqwest::Result;
+    use std::sync::Arc;
+
+    use crate::api::user::UserQuery;
+
+    use super::*;
+    const URL: &str = "http://backend:3030";
+
+    // Test admin operations
+    #[test]
+    fn admin_operations() -> Result<()> {
+        // Set things up for testing
+        let cookie_provider = Arc::new(reqwest::cookie::Jar::default());
+        let client = reqwest::blocking::ClientBuilder::new()
+            .cookie_provider(cookie_provider.clone())
+            .build()?;
+        let user_query = UserQuery {
+            username: "test".to_string(),
+            password: "test".to_string(),
+        };
+
+        // Clear database for testing
+        let result = client.get(format!("{URL}/api/admin/db/clear")).send()?;
+        assert_eq!(
+            result.status(),
+            200,
+            "Could not clear db. Make sure the server is compiled in debug mode."
+        );
+
+        // Create a new user
+        let result = client
+            .post(format!("{URL}/api/user/new"))
+            .json(&user_query)
+            .send()?;
+        assert_eq!(result.status(), 200, "Could not create a new user");
+
+        // Admin give currency
+        let result = client
+            .post(format!("{URL}/api/admin/give"))
+            .json(&AdminGiveQuery{amount_cents: 111, user_id: None})
+            .send()?;
+        assert_eq!(result.status(), 200, "Could not give currency to user via admin give query");
+
+        // Validate that user has the correct amount of currency
+        let result = client.post(format!("{URL}/api/user")).send()?;
+        let user: User = result.json()?;
+        assert_eq!(user.balance_cents, 111, "User didn't get given currency");
+
+        // Promote admin
+        let result = client
+            .post(format!("{URL}/api/admin/give"))
+            .json(&AdminGiveQuery{amount_cents: 111, user_id: None})
+            .send()?;
+        assert_eq!(result.status(), 200, "Could not promote user to admin status");
+
+        // Validate that user has the correct amount of currency
+        let result = client.post(format!("{URL}/api/user")).send()?;
+        let user: User = result.json()?;
+        assert!(user.is_admin, "User didn't aquire admin status");
+
+        Ok(())
+    }
+}

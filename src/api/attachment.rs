@@ -159,7 +159,7 @@ mod tests {
 
         // Generate test images
         let random_image_generator = || {
-            ImageBuffer::from_fn(2000, 1500, |_, _| {
+            ImageBuffer::from_fn(500, 300, |_, _| {
                 let a = || random::<u8>() % 255_u8;
                 image::Rgb([a(), a(), a()])
             })

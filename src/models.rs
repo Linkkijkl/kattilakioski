@@ -9,6 +9,7 @@ pub struct User {
     pub id: i32,
     pub username: String,
     #[serde(skip_serializing)]
+    #[serde(default)]
     pub password_hash: String,
     pub balance_cents: i32,
     pub created_at: chrono::DateTime<chrono::Local>,
