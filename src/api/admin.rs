@@ -16,6 +16,11 @@ use crate::BB8Pool;
 pub async fn session_is_admin(session: &Session, pool: web::Data<BB8Pool>) -> Result<bool, Error> {
     use crate::schema::users::dsl::*;
 
+    // Allow any user to act as admin if running a debug build
+    if cfg!(debug_assertions) {
+        return Ok(true);
+    }
+
     let uid = if let Ok(Some(uid)) = get_login_uid(session) {
         uid
     } else {
@@ -40,17 +45,15 @@ pub async fn session_is_admin(session: &Session, pool: web::Data<BB8Pool>) -> Re
 
 /// Clears the whole database. This endpoint is only accessible in debug builds.
 #[get("/admin/db/clear")]
-pub async fn clear_db(pool: web::Data<BB8Pool>) -> Result<HttpResponse, Error> {
+pub async fn clear_db(pool: web::Data<BB8Pool>, session: Session) -> Result<HttpResponse, Error> {
     use crate::schema::attachments::dsl::*;
     use crate::schema::items::dsl::*;
     use crate::schema::transactions::dsl::*;
     use crate::schema::users::dsl::*;
 
-    // Prevent access when not running a debug build
-    if !cfg!(debug_assertions) {
-        return Err(error::ErrorNotFound(
-            "Feature only available in debug builds",
-        ));
+    // Require admin privileges
+    if !session_is_admin(&session, pool.clone()).await? {
+        return Err(error::ErrorForbidden("Insufficent privileges"));
     }
 
     // Aquire db connection handle
@@ -91,15 +94,13 @@ pub async fn give_balance(
 ) -> Result<HttpResponse, Error> {
     use crate::schema::users::dsl::*;
 
-    // Prevent access when not running a debug build
-    if !cfg!(debug_assertions) {
-        return Err(error::ErrorNotFound(
-            "Feature only available in debug builds",
-        ));
-    }
-
     // Aquire db connection handle
     let mut con = pool.get().await.map_err(error::ErrorInternalServerError)?;
+
+    // Require admin privileges
+    if !session_is_admin(&session, pool.clone()).await? {
+        return Err(error::ErrorForbidden("Insufficent privileges"));
+    }
 
     let uid: i32 = match query.user_id {
         Some(user_id) => {
@@ -147,6 +148,7 @@ pub async fn promote(
 ) -> Result<HttpResponse, Error> {
     use crate::schema::users::dsl::*;
 
+    // Require admin privileges
     if !session_is_admin(&session, pool.clone()).await? {
         return Err(error::ErrorForbidden("Insufficent privileges"));
     }
@@ -216,8 +218,8 @@ mod tests {
 
         // Promote admin
         let result = client
-            .post(format!("{URL}/api/admin/give"))
-            .json(&AdminGiveQuery{amount_cents: 111, user_id: None})
+            .post(format!("{URL}/api/admin/promote"))
+            .json(&AdminPromoteQuery{user_id: user.id})
             .send()?;
         assert_eq!(result.status(), 200, "Could not promote user to admin status");
 

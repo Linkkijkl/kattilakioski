@@ -23,6 +23,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
             .service(user::new_user)
             .service(admin::clear_db)
             .service(admin::give_balance)
+            .service(admin::promote)
             .service(item::get_items)
             .service(item::new_item)
             .service(item::buy_item)

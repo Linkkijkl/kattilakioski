@@ -14,13 +14,11 @@ export const userInfo = $state({ isLoggedIn: false, username: '', balance: "0", 
 const updateAPI = async (): Promise<void> => {
     try {
         const user: User = await getUserInfo();
-        console.log(user);
         userInfo.isLoggedIn = true;
         userInfo.username = user.username;
         userInfo.balance = (user.balance_cents / 100.0).toString();
         userInfo.isAdmin = user.is_admin;
     } catch (err) {
-        console.log(err.toString());
         userInfo.isLoggedIn = false;
     }
 };
@@ -53,6 +51,7 @@ const logout = async (): Promise<void> => {
     }
     userInfo.username = null;
     userInfo.isLoggedIn = false;
+    userInfo.isAdmin = false;
 };
 
 /**
@@ -239,7 +238,7 @@ const buyItem = async (query: BuyQuery): Promise<void> => {
  * @param {Number | null} userId User id to promote
  */
 const adminPromote = async (userId: Number | null = null): Promise<void> => {
-    const response = await fetch(`${apiUrl}/item/buy`, {
+    const response = await fetch(`${apiUrl}/admin/promote`, {
         body: JSON.stringify({
             user_id: userId
         }),
@@ -253,7 +252,7 @@ const adminPromote = async (userId: Number | null = null): Promise<void> => {
 
 type AdminGiveQuery = {
     user_id: Number | null,
-    admount_cents: Number,
+    amount_cents: Number,
 };
 
 /**
