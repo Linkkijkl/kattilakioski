@@ -11,6 +11,7 @@
     mdiBasket,
     mdiCash,
     mdiAccountCircle,
+    mdiCrown,
   } from "@mdi/js";
   import Drawer, {
     AppContent,
@@ -25,6 +26,7 @@
   import Sell from "./lib/Sell.svelte";
   import { updateAPI, userInfo } from "./api.svelte";
   import { onMount } from "svelte";
+  import Admin from "./lib/Admin.svelte";
 
   let drawerOpen = $state(false);
   let view = $state("buy");
@@ -83,6 +85,22 @@
             {/if}
           </Text>
         </Item>
+        {#if userInfo.isAdmin}
+          <Item
+            href="javascript:void(0)"
+            onclick={() => setView("admin")}
+            activated={view === "admin"}
+          >
+            <IconButton aria-label="Admin">
+              <Icon tag="svg" viewBox="0 0 24 24">
+                <path fill="currentColor" d={mdiCrown} />
+              </Icon>
+            </IconButton>
+            <Text>
+              Admin
+            </Text>
+          </Item>
+        {/if}
       </List>
     </Content>
   </Drawer>
@@ -118,6 +136,8 @@
       <Sell />
     {:else if view == "login"}
       <Login />
+    {:else if view == "admin"}
+      <Admin />
     {/if}
   </AppContent>
 </main>

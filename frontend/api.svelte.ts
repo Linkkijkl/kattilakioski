@@ -6,7 +6,7 @@ type UserQuery = {
     password: string
 };
 
-export const userInfo = $state({ isLoggedIn: false, username: '', balance: "0" });
+export const userInfo = $state({ isLoggedIn: false, username: '', balance: "0", isAdmin: false });
 
 /**
  * Updates API runes with fresh information from the server
@@ -14,9 +14,11 @@ export const userInfo = $state({ isLoggedIn: false, username: '', balance: "0" }
 const updateAPI = async (): Promise<void> => {
     try {
         const user: User = await getUserInfo();
+        console.log(user);
         userInfo.isLoggedIn = true;
         userInfo.username = user.username;
         userInfo.balance = (user.balance_cents / 100.0).toString();
+        userInfo.isAdmin = user.is_admin;
     } catch (err) {
         console.log(err.toString());
         userInfo.isLoggedIn = false;
@@ -38,6 +40,7 @@ const login = async (query: UserQuery): Promise<void> => {
     }
     userInfo.username = query.username;
     userInfo.isLoggedIn = true;
+    userInfo.isAdmin = (await response.json()).is_admin;
 };
 
 /**
@@ -71,7 +74,8 @@ type User = {
     id: number,
     username: string,
     balance_cents: number,
-    created_at: Date
+    created_at: Date,
+    is_admin: boolean,
 };
 
 /**
@@ -84,7 +88,10 @@ type User = {
 const getUserInfo = async (user: number | string | null = null): Promise<User> => {
     // Return info for self if no user was provided
     if (user == null) {
-        const response = await fetch(`${apiUrl}/user`);
+        const response = await fetch(`${apiUrl}/user`, {
+            method: 'POST',
+            headers,
+        });
         if (response.status != 200) {
             throw new Error(await response.text());
         }
@@ -105,6 +112,12 @@ const getUserInfo = async (user: number | string | null = null): Promise<User> =
         method: 'POST',
         headers,
     });
+
+    if (response.status != 200) {
+        throw new Error(await response.text());
+    }
+
+    return await response.json();
 };
 
 type ItemQuery = {
@@ -219,9 +232,49 @@ const buyItem = async (query: BuyQuery): Promise<void> => {
     }
 };
 
+/**
+ * Promotes user to admin status. Tries to promote user logged in if no
+ * user is proveded. The endpoint normally requires admin status, but
+ * in debug builds does not.
+ * @param {Number | null} userId User id to promote
+ */
+const adminPromote = async (userId: Number | null = null): Promise<void> => {
+    const response = await fetch(`${apiUrl}/item/buy`, {
+        body: JSON.stringify({
+            user_id: userId
+        }),
+        method: 'POST',
+        headers,
+    });
+    if (response.status != 200) {
+        throw new Error(await response.text());
+    }
+};
+
+type AdminGiveQuery = {
+    user_id: Number | null,
+    admount_cents: Number,
+};
+
+/**
+ * Gives user currency. Adds currency to currently logged in user if no
+ * user is provided. The endpoint normally requires admin status, but
+ * in debug builds does not.
+ */
+const adminGive = async (query: AdminGiveQuery): Promise<void> => {
+    const response = await fetch(`${apiUrl}/admin/give`, {
+        body: JSON.stringify(query),
+        method: 'POST',
+        headers,
+    });
+    if (response.status != 200) {
+        throw new Error(await response.text());
+    }
+};
+
 export type {
     BuyQuery, ItemQuery, NewItemQuery, UserQuery, ItemResult
 };
 export {
-    login, logout, newUser, getUserInfo, updateAPI, getItems, newItem, newAttachment, buyItem
+    login, logout, newUser, getUserInfo, updateAPI, getItems, newItem, newAttachment, buyItem, adminGive, adminPromote
 };

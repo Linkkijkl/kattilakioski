@@ -14,6 +14,7 @@ The development container has Rust tooling, Yarn along with Npm, and PostgreSQL 
 - `yarn install` - install frontend dependencies
 - `yarn prepare` - build themes
 - `yarn dev` - run frontend development server
+- `psql postgres://postgres:mysecretpassword@postgres -c "UPDATE users SET is_admin = true WHERE username = 'yourusername';"` - promote your user to admin
 
 Debug backend and frontend ( even at the same time! ) from vscode's debug side bar. Debug backend tests by first starting backend debugging session, then starting backend tests debugging session.
 
