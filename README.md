@@ -3,7 +3,9 @@
 Quick readme
 
 ## Deploying in Linux environment
-Run `./deploy.sh`. [Docker](https://www.docker.com/) and [Docker compose](https://docs.docker.com/compose/) required.
+[Docker](https://www.docker.com/) and [Docker compose](https://docs.docker.com/compose/) required.
+
+Adapt `docker-compose.example.yml` to your liking and rename it to `docker-compose.yml`. Then launch server stack with `docker compose up`.
 
 ## Development
 
