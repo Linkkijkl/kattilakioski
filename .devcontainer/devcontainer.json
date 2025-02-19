@@ -4,7 +4,6 @@
 	"name": "Kattilakioski",
 	"dockerComposeFile": [
 		"docker-compose.yml",
-		"../docker-compose.yml"
 	],
 	"service": "backend",
 	"workspaceFolder": "/workspace",
