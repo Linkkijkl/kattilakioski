@@ -5,7 +5,7 @@ Quick readme
 ## Deploying in Linux environment
 [Docker](https://www.docker.com/) and [Docker compose](https://docs.docker.com/compose/) required.
 
-Adapt `docker-compose.example.yml` to your liking and rename it to `docker-compose.yml`. Then launch server stack with `docker compose up`.
+Adapt [`docker-compose.example.yml`](docker-compose.example.yml) to your liking and rename it to `docker-compose.yml`. Then launch server stack with `docker compose up`.
 
 ## Development
 
@@ -16,10 +16,10 @@ The development container has Rust tooling, Yarn along with Npm, and PostgreSQL 
 - `yarn install` - install frontend dependencies
 - `yarn prepare` - build themes
 - `yarn dev` - run frontend development server
-- `psql postgres://postgres:mysecretpassword@postgres -c "UPDATE users SET is_admin = true WHERE username = 'yourusername';"` - promote your user to admin
+- `psql postgres://postgres:mypasswd@postgres -c "UPDATE users SET is_admin = true WHERE username = 'yourusername';"` - promote your user to admin
 
 Debug backend and frontend ( even at the same time! ) from vscode's debug side bar. Debug backend tests by first starting backend debugging session, then starting backend tests debugging session.
 
 ## Hardcore Development
 
-If you want to get **all** this running locally without containers: take a look how services in `docker-compose.yml`, `docker-compose.production.yml` and `.env` are configured, and how `deploy.sh` invokes them. Install things as they are required. May the search engine be with you.
+If you want to get **all** this running locally without containers: take a look how services in [`docker-compose.example.yml`](docker-compose.example.yml) are configured, and what tools are installed in [`.devcontainer/Dockerfile`](.devcontainer/Dockerfile). [`.devcontainer/devcontainer.json`](.devcontainer/devcontainer.json) might also provide some information. Install things as they are required. May the search engine be with you.

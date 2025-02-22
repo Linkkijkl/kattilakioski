@@ -4,25 +4,23 @@ services:
       dockerfile: Dockerfile
       context: .
     # Comment the build directive above and uncomment the line below to
-    # pull latest prebuilt image from Github container registry.
+    # pull the latest prebuilt image from Github container registry.
     #image: ghcr.io/linkkijkl/kattilakioski:latest
     ports:
       - 3030:3030
     depends_on:
       - postgres
     environment:
-      - "RUST_LOG=debug" # =debug for more verbosity, =warning for less
-      # Put your session secret here. Must be over 33 characters long.
-      # Choosing a weak string of characters, or leaking this, would defeat
-      # the sites whole security.
+      # =debug for more verbosity, =warning for less
+      - "RUST_LOG=info"
+      # Put your session secret here. Choose a securely random string
+      # over 31 characters long.
       - "SESSION_SECRET=sessionsecretsecretsecretsecretsecret"
       # Password salt. Choose a securely random string of about 8 characters.
       - "SALT=defaultsalt"
       # Database url to use for connecting to db. Contains authorization.
       # Form of: postgres://<user>:<password>@<hostname>
       - "DATABASE_URL=postgres://postgres:mypasswd@postgres"
-
-    restart: unless-stopped
 
   postgres:
     image: postgres:alpine
@@ -31,9 +29,8 @@ services:
       - "postgres-data:/var/lib/postgresql/data:rw"
     environment:
       # Choose a securely random string of characters, preferably over
-      # 12 characters long, and use the same password on DATABASE_URL above.
+      # 12 characters long, and use the same password in DATABASE_URL above.
       - "POSTGRES_PASSWORD=mypasswd"
 
 volumes:
   postgres-data:
-
