@@ -49,7 +49,7 @@ const logout = async (): Promise<void> => {
     if (response.status != 200) {
         throw new Error(await response.text());
     }
-    userInfo.username = null;
+    userInfo.username = '';
     userInfo.isLoggedIn = false;
     userInfo.isAdmin = false;
 };

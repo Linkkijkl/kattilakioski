@@ -3,8 +3,8 @@
     import { getItems } from "../api.svelte";
     import type { ItemResult } from "../api.svelte";
     let { searchTerm="" } = $props();
-    let itemsPromise: Promise<ItemResult[]> = $state();
-    const update = () => itemsPromise = getItems({search_term: searchTerm, limit: null, offset: null});
+    let itemsPromise: Promise<ItemResult[]> = $state(Promise.resolve([]));
+    const update = () => itemsPromise = getItems({search_term: searchTerm, limit: null, offset: null, get_items_without_stock: false});
     update();
 </script>
 
@@ -15,7 +15,7 @@
         <ItemCard 
             title={item.title}
             description={item.description}
-            price={item.price_cents / 100.0}
+            price={(item.price_cents / 100.0).toString()}
             stock={item.amount}
             image={item.attachments[0].thumbnail_path}
             id={item.id}
