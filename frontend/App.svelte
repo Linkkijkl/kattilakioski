@@ -30,7 +30,10 @@
 
   let drawerOpen = $state(false);
   let view = $state("buy");
-  const setView = (val: string) => (view = val);
+  const setView = (val: string) => {
+    view = val;
+    drawerOpen = false;
+  };
 
   onMount(updateAPI);
 </script>
