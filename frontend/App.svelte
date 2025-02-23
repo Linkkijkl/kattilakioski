@@ -19,6 +19,7 @@
     Header,
     Title as DrawerTitle,
     Subtitle,
+    Scrim,
   } from "@smui/drawer";
   import List, { Item, Text, Graphic, Separator, Subheader } from "@smui/list";
   import ItemListing from "./lib/ItemListing.svelte";
@@ -107,6 +108,7 @@
       </List>
     </Content>
   </Drawer>
+  <Scrim fixed={false} />
   <AppContent class="flexor-content">
     <TopAppBar variant="static" color="primary">
       <Row>
