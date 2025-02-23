@@ -19,6 +19,7 @@
     Header,
     Title as DrawerTitle,
     Subtitle,
+    Scrim,
   } from "@smui/drawer";
   import List, { Item, Text, Graphic, Separator, Subheader } from "@smui/list";
   import ItemListing from "./lib/ItemListing.svelte";
@@ -30,7 +31,10 @@
 
   let drawerOpen = $state(false);
   let view = $state("buy");
-  const setView = (val: string) => (view = val);
+  const setView = (val: string) => {
+    view = val;
+    drawerOpen = false;
+  };
 
   onMount(updateAPI);
 </script>
@@ -104,6 +108,7 @@
       </List>
     </Content>
   </Drawer>
+  <Scrim fixed={false} />
   <AppContent class="flexor-content">
     <TopAppBar variant="static" color="primary">
       <Row>
@@ -117,17 +122,12 @@
         </Section>
         {#if userInfo.isLoggedIn} 
         <Section align="end" toolbar>
-          { userInfo.username }
+          Logged in as:
+          { userInfo.username },
+          balance:
           { userInfo.balance }€
         </Section>
         {/if}
-        <Section align="end" toolbar>
-          <IconButton aria-label="Search">
-            <Icon tag="svg" viewBox="0 0 24 24">
-              <path fill="currentColor" d={mdiSearchWeb} />
-            </Icon>
-          </IconButton>
-        </Section>
       </Row>
     </TopAppBar>
     {#if view === "buy"}

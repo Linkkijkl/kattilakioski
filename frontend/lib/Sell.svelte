@@ -8,7 +8,7 @@
     let description = $state("");
     let amount = $state(1);
     let price = $state("0.0");
-    let files: FileList = $state(new FileList);
+    let files: FileList | any = $state();
     let imageDataUrl = $state("");
     let error: string = $state("");
 
@@ -29,11 +29,15 @@
     };
 
     $effect(() => {
+        console.log(files);
         if (files != null && files.length > 0) {
             const reader = new FileReader();
             reader.addEventListener("load", () => {
                 const result = reader.result;
-                if (typeof result != "string") return;
+                if (typeof result != "string") {
+                    console.log("Heloo :D");
+                    return;
+                };
                 imageDataUrl = result;
             });
             reader.readAsDataURL(files[0]);

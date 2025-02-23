@@ -33,12 +33,16 @@
 		}
 		await updateAPI();
 	};
+
+	const view = async () => {
+		console.log("Unimplemented");
+	};
 </script>
 
 <div class="card-display">
 	<div class="card-container">
 		<Card>
-			<PrimaryAction onclick={buy}>
+			<PrimaryAction onclick={view}>
 				<Media
 					class="card-media-16x9"
 					aspectRatio="16x9"
