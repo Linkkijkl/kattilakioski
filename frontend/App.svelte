@@ -122,17 +122,12 @@
         </Section>
         {#if userInfo.isLoggedIn} 
         <Section align="end" toolbar>
-          { userInfo.username }
+          Logged in as:
+          { userInfo.username },
+          balance:
           { userInfo.balance }€
         </Section>
         {/if}
-        <Section align="end" toolbar>
-          <IconButton aria-label="Search">
-            <Icon tag="svg" viewBox="0 0 24 24">
-              <path fill="currentColor" d={mdiSearchWeb} />
-            </Icon>
-          </IconButton>
-        </Section>
       </Row>
     </TopAppBar>
     {#if view === "buy"}
