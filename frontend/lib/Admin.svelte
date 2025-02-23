@@ -19,7 +19,7 @@
             await adminGive({user_id: user.id, amount_cents: amountCents});
             giveError = "Success!";
             updateAPI();
-        } catch (err) {
+        } catch (err: any) {
             giveError = err.toString();
         }
     };
@@ -32,7 +32,7 @@
             await adminPromote(user.id);
             promoteError = "Success!";
             updateAPI();
-        } catch (err) {
+        } catch (err: any) {
             promoteError = err.toString();
         }
     };
@@ -105,10 +105,10 @@
         width: 100%;
         align-items: center;
     }
-    .row {
+    /*.row {
         display: flex;
         flex-direction: row;
-    }
+    }*/
     .error {
         color: red;
     }

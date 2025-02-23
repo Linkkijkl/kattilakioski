@@ -8,8 +8,8 @@
     let description = $state("");
     let amount = $state(1);
     let price = $state("0.0");
-    let files: FileList = $state();
-    let imageDataUrl: string | ArrayBuffer = $state();
+    let files: FileList = $state(new FileList);
+    let imageDataUrl = $state("");
     let error: string = $state("");
 
     const sell = async (event: Event) => {
@@ -22,7 +22,7 @@
                 await newItem({title, amount, attachments, description, price});
                 error = "Success!";
                 await updateAPI();
-            } catch (err) {
+            } catch (err: any) {
                 error = err.toString();
             }
         }
@@ -32,7 +32,9 @@
         if (files != null && files.length > 0) {
             const reader = new FileReader();
             reader.addEventListener("load", () => {
-                imageDataUrl = reader.result;
+                const result = reader.result;
+                if (typeof result != "string") return;
+                imageDataUrl = result;
             });
             reader.readAsDataURL(files[0]);
         }
@@ -86,11 +88,11 @@
 </div>
 
 <ItemCard
-    bind:title
-    bind:description
-    bind:stock={amount}
-    bind:price
-    bind:image={imageDataUrl}
+    {title}
+    {description}
+    stock={amount}
+    {price}
+    image={imageDataUrl}
     preview={true}
 />
 

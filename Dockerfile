@@ -6,7 +6,7 @@ WORKDIR /app
 RUN rustup default nightly
 ENV RUSTFLAGS="-C target-feature=-crt-static"
 # Future debugger: add your additional Rust specific files to the following
-# line. Specifying the files makes Docker use cache if they are not modified,
+# line. Specifying files makes Docker use cache if they are not modified,
 # skipping the tidiously long build.
 COPY Cargo.lock Cargo.toml diesel.toml .
 COPY src src

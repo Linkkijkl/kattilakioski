@@ -12,8 +12,7 @@ services:
     volumes:
       - "postgres-data:/var/lib/postgresql/data:rw"
     environment:
-      - "POSTGRES_PASSWORD=mypassword"
+      - "POSTGRES_PASSWORD=mypasswd"
  
 volumes:
   postgres-data:
-

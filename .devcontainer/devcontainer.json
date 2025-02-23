@@ -30,7 +30,8 @@
 				"tamasfe.even-better-toml",
 				"fill-labs.dependi",
 				"svelte.svelte-vscode",
-				"firefox-devtools.vscode-firefox-debug"
+				"firefox-devtools.vscode-firefox-debug",
+				"ms-azuretools.vscode-docker"
 			]
 		}
 	},

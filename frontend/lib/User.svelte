@@ -13,7 +13,7 @@
         event.preventDefault();
         try {
             await login({ username: usernameInput, password: passwordInput });
-        } catch (err) {
+        } catch (err: any) {
             error = err.toString();
         }
     };
@@ -22,7 +22,7 @@
         event.preventDefault();
         try {
             await newUser({ username: usernameInput, password: passwordInput });
-        } catch (err) {
+        } catch (err: any) {
             error = err.toString();
         }
     };

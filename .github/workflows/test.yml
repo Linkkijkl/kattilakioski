@@ -1,0 +1,17 @@
+name: Build, check and run tests
+on: [pull_request]
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Create environment files
+        run: |
+          mkdir public
+          mkdir dist
+          mkdir frontend/public
+      - name: Run tests
+        uses: devcontainers/ci@v0.3
+        with:
+          runCmd: ./tests.sh

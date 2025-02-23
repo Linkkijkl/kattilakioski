@@ -18,7 +18,7 @@
 		title = "no title",
 		description = "no description",
 		image = "https://placehold.co/320x180?text=16x9",
-		price = NaN,
+		price = "",
 		stock = NaN,
 		preview = false,
 		id = NaN,
@@ -28,7 +28,7 @@
 		try {
 			await buyItem({amount: 1, item_id: id});
 			dispatch("buyEvent");
-		} catch (err) {
+		} catch (err: any) {
 			alert(err.toString());
 		}
 		await updateAPI();

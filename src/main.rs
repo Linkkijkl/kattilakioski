@@ -57,14 +57,14 @@ async fn main() -> std::io::Result<()> {
 
     // Run pending db migrations
     let db_url = std::env::var("DATABASE_URL")
-        .unwrap_or("postgres://postgres:mysecretpassword@postgres".to_string());
+        .unwrap_or("postgres://postgres:mypasswd@postgres".to_string());
     run_migrations(&db_url);
 
     // Initiate db connection pool
     let diesel_connection_manager =
         AsyncDieselConnectionManager::<diesel_async::AsyncPgConnection>::new(
             std::env::var("DATABASE_URL")
-                .unwrap_or("postgres://postgres:mysecretpassword@postgres".to_string()),
+                .unwrap_or("postgres://postgres:mypasswd@postgres".to_string()),
         );
     let diesel_connection_pool: BB8Pool = Pool::builder()
         .build(diesel_connection_manager)
