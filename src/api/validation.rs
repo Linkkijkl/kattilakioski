@@ -9,7 +9,7 @@ mod validators {
     ///
     /// # Returns
     /// A `Result` that is an error with a message if the value does not meet the criteria, or `Ok(())` on success.
-    fn length(min_length: usize, max_length: usize, value: String) -> Result<(), String> {
+    fn length(min_length: usize, max_length: usize, value: &str) -> Result<(), String> {
         if value.len() < min_length {
             Err(format!(
                 "Value must be at least {} characters long",
@@ -32,7 +32,7 @@ mod validators {
     ///
     /// # Returns
     /// A `Result` that is an error with a message if the value does not meet the criteria, or `Ok(())`` on success.
-    fn alphanumeric(value: String) -> Result<(), String> {
+    fn alphanumeric(value: &str) -> Result<(), String> {
         if !value.chars().all(|c| c.is_alphanumeric()) {
             Err("Value must be alphanumeric".to_string())
         } else {
@@ -47,7 +47,7 @@ mod validators {
     ///
     /// # Returns
     /// A `Result` that is an error with a message if the value does not meet the criteria, or `Ok(())` on success.
-    fn currency(value: String) -> Result<(), String> {
+    fn currency(value: &str) -> Result<(), String> {
         let split: Vec<&str> = value.split(['.', ',']).collect();
         let flattened = split.concat();
         let splits = split.len();
@@ -58,30 +58,55 @@ mod validators {
         }
     }
 
+    /// Validates that a string is a valid username.
+    /// The username must be between 3 and 20 characters long, contain only alphanumeric characters, and be in lowercase.
+    ///
+    /// # Arguments
+    /// * `value`: The string to be validated as a username.
+    ///
+    /// # Returns
+    /// A `Result` that is an error with a message if the value does not meet the criteria, or `Ok(())` on success.
+    fn username(value: &str) -> Result<(), String> {
+        let processed = value.to_lowercase().trim().to_string();
+        length(3, 20, &processed)?;
+        alphanumeric(&processed)?;
+        Ok(())
+    }
+
     mod tests {
         use super::*;
 
         #[test]
         fn test_length_validator() {
-            assert!(length(5, 10, "hello".to_string()).is_ok());
-            assert!(length(5, 10, "helloworld".to_string()).is_ok());
-            assert!(length(7, 10, "short".to_string()).is_err());
-            assert!(length(5, 10, "toolongforthisfield".to_string()).is_err());
+            assert!(length(5, 10, "hello").is_ok());
+            assert!(length(5, 10, "helloworld").is_ok());
+            assert!(length(7, 10, "short").is_err());
+            assert!(length(5, 10, "toolongforthisfield").is_err());
         }
 
         #[test]
         fn test_alphanumeric_validator() {
-            assert!(alphanumeric("hello".to_string()).is_ok());
-            assert!(alphanumeric("hello123".to_string()).is_ok());
-            assert!(alphanumeric("hello-world".to_string()).is_err());
+            assert!(alphanumeric("hello").is_ok());
+            assert!(alphanumeric("hello123").is_ok());
+            assert!(alphanumeric("hello-world").is_err());
         }
 
         #[test]
         fn test_currency_validator() {
-            assert!(currency("1234.56".to_string()).is_ok());
-            assert!(currency("1,234.56".to_string()).is_err());
-            assert!(currency("1234,56".to_string()).is_ok());
-            assert!(currency("1234.567".to_string()).is_err());
+            assert!(currency("1234.56").is_ok());
+            assert!(currency("1,234.56").is_err());
+            assert!(currency("1234,56").is_ok());
+            assert!(currency("1234.567").is_err());
+        }
+
+        #[test]
+        fn test_username_validator() {
+            assert!(username("val1duser").is_ok());
+            assert!(username("VaLiDuSER").is_ok());
+            assert!(username("1234567890").is_ok());
+            assert!(username("invalid user").is_err());
+            assert!(username("inv@lid").is_err());
+            assert!(username("").is_err());
         }
     }
 }
