@@ -6,6 +6,7 @@ pub mod item;
 pub mod attachment;
 pub mod transactions;
 pub mod admin;
+pub mod validation;
 
 #[get("/hello")]
 pub async fn hello_world() -> Result<HttpResponse, Error> {
