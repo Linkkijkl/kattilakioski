@@ -1,10 +1,7 @@
+import type { User, UserQuery, ItemResult, ItemQuery, NewItemQuery, BuyQuery, Attachment, AdminGiveQuery, ValidateQuery } from './types';
+
 const apiUrl = '/api';
 const headers = { 'Content-Type': 'application/json' };
-
-type UserQuery = {
-    username: string,
-    password: string
-};
 
 export const userInfo = $state({ isLoggedIn: false, username: '', balance: "0", isAdmin: false });
 
@@ -69,14 +66,6 @@ const newUser = async (query: UserQuery): Promise<void> => {
     }
 };
 
-type User = {
-    id: number,
-    username: string,
-    balance_cents: number,
-    created_at: Date,
-    is_admin: boolean,
-};
-
 /**
  * Retrieves user info
  * @param {Number | string | null} user
@@ -119,36 +108,9 @@ const getUserInfo = async (user: number | string | null = null): Promise<User> =
     return await response.json();
 };
 
-type ItemQuery = {
-    search_term: string | null,
-    offset: number | null,
-    limit: number | null,
-    get_items_without_stock: boolean | null,
-};
-
-type Attachment = {
-    id: number,
-    file_path: string,
-    thumbnail_path: string,
-    item_id: number | null,
-    uploader_id: number,
-    uploaded_at: Date
-};
-
-type ItemResult = {
-    id: number,
-    title: string,
-    description: string,
-    price_cents: number,
-    amount: number,
-    seller_id: number,
-    created_at: Date,
-    attachments: Attachment[]
-};
-
 /**
  * Get list of items for sale. List can be filtered, limited and offset by provided ItemQuery.
- * @param {ItemQuery | null} query Optional equest filtering, result limiting and offset information.
+ * @param {ItemQuery | null} query Optional request filtering, result limiting and offset information.
  * @returns {ItemResult[]} List of items matching query
  */
 const getItems = async (query: ItemQuery | null = null): Promise<ItemResult[]> => {
@@ -164,16 +126,6 @@ const getItems = async (query: ItemQuery | null = null): Promise<ItemResult[]> =
         throw new Error(await response.text());
     }
     return await response.json();
-};
-
-type AttachmentId = number;
-
-type NewItemQuery = {
-    title: string,
-    description: string,
-    amount: number,
-    price: string,
-    attachments: AttachmentId[]
 };
 
 /**
@@ -211,11 +163,6 @@ const newAttachment = async (file: File): Promise<Attachment> => {
     return await response.json();
 };
 
-type BuyQuery = {
-    item_id: number,
-    amount: number,
-};
-
 /**
  * Buys an item
  * @param {BuyQuery} query Item id and amount to be bought
@@ -250,11 +197,6 @@ const adminPromote = async (userId: Number | null = null): Promise<void> => {
     }
 };
 
-type AdminGiveQuery = {
-    user_id: number | null,
-    amount_cents: number,
-};
-
 /**
  * Gives user currency. Adds currency to currently logged in user if no
  * user is provided. The endpoint normally requires admin status, but
@@ -270,10 +212,6 @@ const adminGive = async (query: AdminGiveQuery): Promise<void> => {
         throw new Error(await response.text());
     }
 };
-
-type ValidateQuery = {
-    value: string,
-}
 
 /**
  * Validates a given value against a specific type of field.
@@ -297,9 +235,6 @@ const validate = async (type: string, value: string): Promise<void> => {
     }
 };
 
-export type {
-    BuyQuery, ItemQuery, NewItemQuery, UserQuery, ItemResult
-};
 export {
     login, logout, newUser, getUserInfo, updateAPI, getItems, newItem, newAttachment, buyItem, adminGive, adminPromote, validate
 };
