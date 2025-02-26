@@ -1,13 +1,102 @@
-import type { User, UserQuery, ItemResult, ItemQuery, NewItemQuery, BuyQuery, Attachment, AdminGiveQuery, ValidateQuery } from './types';
-
 const apiUrl = '/api';
 const headers = { 'Content-Type': 'application/json' };
 
 export const userInfo = $state({ isLoggedIn: false, username: '', balance: "0", isAdmin: false });
 
-const api = (() => {
+// Types defined here should represent types defined in the backend
+
+/**
+ * Represents the query parameters for user authentication and registration.
+ */
+export type UserQuery = {
+    username: string,
+    password: string
+};
+
+/**
+ * Represents a user and their information.
+ */
+export type User = {
+    id: number,
+    username: string,
+    balance_cents: number,
+    created_at: Date,
+    is_admin: boolean,
+};
+
+/**
+ * Represents the query parameters for searching items.
+ */
+export type ItemQuery = {
+    search_term: string | null,
+    offset: number | null,
+    limit: number | null,
+    get_items_without_stock: boolean | null,
+};
+
+/**
+ * Represents an attachment object.
+ */
+export type Attachment = {
+    id: number,
+    file_path: string,
+    thumbnail_path: string,
+    item_id: number | null,
+    uploader_id: number,
+    uploaded_at: Date
+};
+
+/**
+ * Represents an item.
+ */
+export type ItemResult = {
+    id: number,
+    title: string,
+    description: string,
+    price_cents: number,
+    amount: number,
+    seller_id: number,
+    created_at: Date,
+    attachments: Attachment[]
+};
+
+/**
+ * Represents the parameters for creating a new item.
+ */
+export type NewItemQuery = {
+    title: string,
+    description: string,
+    amount: number,
+    price: string,
+    attachments: number[],
+};
+
+/**
+ * Represents the query parameters for buying an item.
+ */
+export type BuyQuery = {
+    item_id: number,
+    amount: number,
+};
+
+/**
+ * Represents the query parameters for giving balance to a user.
+ */
+export type AdminGiveQuery = {
+    user_id: number | null,
+    amount_cents: number,
+};
+
+/**
+ * Represents the query parameters for validating a form value.
+ */
+export type ValidateQuery = {
+    value: string,
+}
+
+const api = (() => {    
     /**
-     * Updates API runes with fresh information from the server
+     * Updates `userInfo` with fresh information from the server
      */
     const update = async (): Promise<void> => {
         try {
@@ -216,7 +305,8 @@ const api = (() => {
 
     /**
      * Validates a given value against a specific type of field.
-     * @param {string} type - The type of validation to perform. Must be one of 'password', 'currency', or 'username'.
+     * @param {string} type - The type of validation to perform. Must be one of 'password', 'currency',
+     * or 'username'.
      * @param {string} value - The value to validate.
      * @throws Will throw an error if the validation type is invalid.
      */
@@ -237,7 +327,8 @@ const api = (() => {
     };
 
     return {
-        login, logout, newUser, getUserInfo, update, getItems, newItem, newAttachment, buyItem, adminGive, adminPromote, validate
+        login, logout, newUser, getUserInfo, update, getItems, newItem, newAttachment, buyItem, adminGive,
+        adminPromote, validate
     };
 })();
 

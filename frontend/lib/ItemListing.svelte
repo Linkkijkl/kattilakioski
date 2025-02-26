@@ -1,7 +1,7 @@
 <script lang='ts'>
     import ItemCard from "./ItemCard.svelte";
     import api from "../api.svelte";
-    import type { ItemResult } from "../types";
+    import type { ItemResult } from "../api.svelte";
     let { searchTerm="" } = $props();
     let itemsPromise: Promise<ItemResult[]> = $state(Promise.resolve([]));
     const update = () => itemsPromise = api.getItems({search_term: searchTerm, limit: null, offset: null, get_items_without_stock: false});
