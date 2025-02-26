@@ -9,7 +9,7 @@
 		ActionIcons,
 	} from "@smui/card";
 	import Button, { Label } from "@smui/button";
-    import { buyItem, updateAPI } from "../api.svelte";
+    import api from "../api.svelte";
     import { createEventDispatcher } from "svelte";
 
 	const dispatch = createEventDispatcher();
@@ -26,12 +26,12 @@
 
 	const buy = async () => {
 		try {
-			await buyItem({amount: 1, item_id: id});
+			await api.buyItem({amount: 1, item_id: id});
 			dispatch("buyEvent");
 		} catch (err: any) {
 			alert(err.toString());
 		}
-		await updateAPI();
+		await api.updateAPI();
 	};
 
 	const view = async () => {

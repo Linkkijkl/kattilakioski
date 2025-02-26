@@ -2,7 +2,7 @@
     import Button, { Label } from "@smui/button";
     import Textfield from "@smui/textfield";
 
-    import { userInfo, login, newUser, logout, updateAPI, validate } from "../api.svelte";
+    import api, { userInfo } from "../api.svelte";
     import { onMount } from "svelte";
 
     let usernameInput = $state("");
@@ -13,7 +13,7 @@
     const loginSubmit = async (event: Event) => {
         event.preventDefault();
         try {
-            await login({ username: usernameInput, password: passwordInput });
+            await api.login({ username: usernameInput, password: passwordInput });
         } catch (err: any) {
             error = err.toString();
         }
@@ -22,7 +22,7 @@
     const registerSumbit = async (event: Event) => {
         event.preventDefault();
         try {
-            await newUser({ username: usernameInput, password: passwordInput });
+            await api.newUser({ username: usernameInput, password: passwordInput });
         } catch (err: any) {
             error = err.toString();
         }
@@ -33,7 +33,7 @@
         clearTimeout(usernameTimer);
         usernameTimer = setTimeout(async () => {
             try {
-                await validate('username', usernameInput);
+                await api.validate('username', usernameInput);
                 error = "";
             } catch (err: any) {
                 error = err.toString();
@@ -46,7 +46,7 @@
         clearTimeout(passwordTimer);
         passwordTimer = setTimeout(async () => {
             try {
-                await validate('password', passwordInput);
+                await api.validate('password', passwordInput);
                 error = "";
             } catch (err: any) {
                 error = err.toString();
@@ -54,7 +54,7 @@
         }, debounceTimeout);
     };
 
-    onMount(updateAPI);
+    onMount(api.updateAPI);
 </script>
 
 {#if !userInfo.isLoggedIn}
@@ -98,7 +98,7 @@
     <div class="login-form">
         <p>Logged in as {userInfo.username}</p><br/>
         <p>Your balance: {userInfo.balance}€</p>
-        <Button variant="raised" onclick={logout}>
+        <Button variant="raised" onclick={api.logout}>
             <Label>Logout</Label>
         </Button>
     </div>

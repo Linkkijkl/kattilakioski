@@ -2,7 +2,7 @@
     import Button, { Label } from "@smui/button";
     import Textfield from "@smui/textfield";
     import ItemCard from "./ItemCard.svelte";
-    import { newAttachment, newItem, updateAPI, validate } from "../api.svelte";
+    import api from "../api.svelte";
 
     let title = $state("");
     let description = $state("");
@@ -19,11 +19,11 @@
         let attachments = [];
         for (const file of files) {
             try {
-                let response = await newAttachment(file);
+                let response = await api.newAttachment(file);
                 attachments.push(response.id);
-                await newItem({title, amount: parseInt(amount), attachments, description, price});
+                await api.newItem({title, amount: parseInt(amount), attachments, description, price});
                 error = "Success!";
-                await updateAPI();
+                await api.updateAPI();
             } catch (err: any) {
                 error = err.toString();
             }
@@ -49,7 +49,7 @@
         clearTimeout(priceTimer);
         priceTimer = setTimeout(async () => {
             try {
-                await validate('currency', price);
+                await api.validate('currency', price);
                 error = "";
             } catch (err: any) {
                 error = err.toString();

@@ -25,7 +25,7 @@
   import ItemListing from "./lib/ItemListing.svelte";
   import Login from "./lib/User.svelte";
   import Sell from "./lib/Sell.svelte";
-  import { updateAPI, userInfo } from "./api.svelte";
+  import api, { userInfo } from "./api.svelte";
   import { onMount } from "svelte";
   import Admin from "./lib/Admin.svelte";
 
@@ -36,7 +36,7 @@
     drawerOpen = false;
   };
 
-  onMount(updateAPI);
+  onMount(api.updateAPI);
 </script>
 
 <main>
