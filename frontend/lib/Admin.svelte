@@ -2,7 +2,7 @@
     import Button, { Label } from "@smui/button";
     import Textfield from "@smui/textfield";
 
-    import { userInfo, updateAPI, adminGive, adminPromote, getUserInfo } from "../api.svelte";
+    import api, { userInfo } from "../api.svelte";
     import { onMount } from "svelte";
 
     let giveUserInput = $state("");
@@ -15,10 +15,10 @@
         event.preventDefault();
         const amountCents = Math.floor(parseFloat(giveAmountInput) * 100);
         try {
-            const user = await getUserInfo(giveUserInput);
-            await adminGive({user_id: user.id, amount_cents: amountCents});
+            const user = await api.getUserInfo(giveUserInput);
+            await api.adminGive({user_id: user.id, amount_cents: amountCents});
             giveError = "Success!";
-            updateAPI();
+            api.update();
         } catch (err: any) {
             giveError = err.toString();
         }
@@ -28,16 +28,16 @@
         event.preventDefault();
         const amountCents = Math.floor(parseFloat(giveAmountInput) * 100);
         try {
-            const user = await getUserInfo(giveUserInput);
-            await adminPromote(user.id);
+            const user = await api.getUserInfo(giveUserInput);
+            await api.adminPromote(user.id);
             promoteError = "Success!";
-            updateAPI();
+            api.update();
         } catch (err: any) {
             promoteError = err.toString();
         }
     };
 
-    onMount(updateAPI);
+    onMount(api.update);
 </script>
 
 <form class="column" onsubmit={giveSubmit}>
