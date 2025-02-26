@@ -2,7 +2,7 @@ use actix_web::{Error, post, web, HttpResponse};
 use serde::{Deserialize, Serialize};
 
 /// Module containing all the validator functions for the API.
-mod validators {
+pub mod validators {
     /// Validates that a string's length is within the specified range.
     ///
     /// # Arguments
@@ -15,12 +15,12 @@ mod validators {
     pub fn length(min_length: usize, max_length: usize, value: &str) -> Result<(), String> {
         if value.len() < min_length {
             Err(format!(
-                "Value must be at least {} characters long",
+                "must be at least {} characters long",
                 min_length
             ))
         } else if value.len() > max_length {
             Err(format!(
-                "Value must be at most {} characters long",
+                "must be at most {} characters long",
                 max_length
             ))
         } else {
@@ -37,7 +37,7 @@ mod validators {
     /// A `Result` that is an error with a message if the value does not meet the criteria, or `Ok(())`` on success.
     pub fn alphanumeric(value: &str) -> Result<(), String> {
         if !value.chars().all(|c| c.is_alphanumeric()) {
-            Err("Value must be alphanumeric".to_string())
+            Err("must be alphanumeric".to_string())
         } else {
             Ok(())
         }
@@ -55,24 +55,10 @@ mod validators {
         let flattened = split.concat();
         let splits = split.len();
         if (splits >= 2 && split[1].len() > 2) || !flattened.chars().all(char::is_numeric) {
-            Err("Value must be a valid currency value (e.g., 1234.56).".to_string())
+            Err("must be a valid currency value (e.g., 1234.56).".to_string())
         } else {
             Ok(())
         }
-    }
-
-    /// Validates that a string is a valid username.
-    ///
-    /// # Arguments
-    /// * `value`: The string to be validated as a username.
-    ///
-    /// # Returns
-    /// A `Result` that is an error with a message if the value does not meet the criteria, or `Ok(())` on success.
-    pub fn username(value: &str) -> Result<(), String> {
-        let processed = value.to_lowercase().trim().to_string();
-        length(3, 20, &processed)?;
-        alphanumeric(&processed)?;
-        Ok(())
     }
 
     /// Validates that a string contains at least one uppercase letter and one lowercase letter.
@@ -88,7 +74,7 @@ mod validators {
         if has_uppercase && has_lowercase {
             Ok(())
         } else {
-            Err("Value must contain at least one uppercase letter and one lowercase letter.".to_string())
+            Err("must contain at least one uppercase letter and one lowercase letter.".to_string())
         }
     }
 
@@ -103,7 +89,7 @@ mod validators {
         if value.chars().any(char::is_numeric) {
             Ok(())
         } else {
-            Err("Value must contain at least one number.".to_string())
+            Err("must contain at least one number.".to_string())
         }
     }
 
@@ -120,8 +106,24 @@ mod validators {
         if value.chars().any(|c| special_chars.contains(c)) {
             Ok(())
         } else {
-            Err("Value must contain at least one special character.".to_string())
+            Err("must contain at least one special character.".to_string())
         }
+    }
+
+    /// Validates that a string is a valid username.
+    ///
+    /// # Arguments
+    /// * `value`: The string to be validated as a username.
+    ///
+    /// # Returns
+    /// A `Result` that is an error with a message if the value does not meet the criteria, or `Ok(())` on success.
+    pub fn username(value: &str) -> Result<(), String> {
+        let helper = |value: &str| -> Result<(), String> {
+            length(8, 20, value)?;
+            alphanumeric(value)?;
+            Ok(())
+        };
+        helper(value).map_err(|e| format!("Username {e}"))
     }
 
     /// Validates that a string is a valid password, ensuring it meets the following criteria:
@@ -136,11 +138,14 @@ mod validators {
     /// # Returns
     /// A `Result` that is an error with a message if the value does not meet the criteria, or `Ok(())` on success.
     pub fn password(value: &str) -> Result<(), String> {
-        length(8, 64, value)?;
-        contains_upper_and_lower_case(value)?;
-        contains_number(value)?;
-        contains_special(value)?;
-        Ok(())
+        let helper = |value: &str| -> Result<(), String> {
+            length(8, 64, value)?;
+            contains_upper_and_lower_case(value)?;
+            contains_number(value)?;
+            contains_special(value)?;
+            Ok(())
+        };
+        helper(value).map_err(|e| format!("Password {e}"))
     }
     
     mod tests {
