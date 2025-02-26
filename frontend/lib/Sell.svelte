@@ -2,15 +2,17 @@
     import Button, { Label } from "@smui/button";
     import Textfield from "@smui/textfield";
     import ItemCard from "./ItemCard.svelte";
-    import { newAttachment, newItem, updateAPI } from "../api.svelte";
+    import { newAttachment, newItem, updateAPI, validate } from "../api.svelte";
 
     let title = $state("");
     let description = $state("");
-    let amount = $state(1);
+    let amount = $state("1");
     let price = $state("0.0");
     let files: FileList | any = $state();
     let imageDataUrl = $state("");
     let error: string = $state("");
+
+    const debounceTimeout = 500;
 
     const sell = async (event: Event) => {
         event.preventDefault();
@@ -19,7 +21,7 @@
             try {
                 let response = await newAttachment(file);
                 attachments.push(response.id);
-                await newItem({title, amount, attachments, description, price});
+                await newItem({title, amount: parseInt(amount), attachments, description, price});
                 error = "Success!";
                 await updateAPI();
             } catch (err: any) {
@@ -29,13 +31,11 @@
     };
 
     $effect(() => {
-        console.log(files);
         if (files != null && files.length > 0) {
             const reader = new FileReader();
             reader.addEventListener("load", () => {
                 const result = reader.result;
                 if (typeof result != "string") {
-                    console.log("Heloo :D");
                     return;
                 };
                 imageDataUrl = result;
@@ -43,6 +43,19 @@
             reader.readAsDataURL(files[0]);
         }
     });
+
+    let priceTimer: number;
+    const validatePrice = () => {
+        clearTimeout(priceTimer);
+        priceTimer = setTimeout(async () => {
+            try {
+                await validate('currency', price);
+                error = "";
+            } catch (err: any) {
+                error = err.toString();
+            }
+        }, debounceTimeout);
+    };
 </script>
 
 <form class="upload-form" onsubmit={sell}>
@@ -62,7 +75,7 @@
     ></Textfield>
 
     <div class="row">
-        <Textfield label="Price" bind:value={price}></Textfield>
+        <Textfield label="Price" bind:value={price} onkeyup={validatePrice}></Textfield>
         <Textfield label="Amount" bind:value={amount}></Textfield>
     </div>
 
