@@ -1,4 +1,7 @@
-/// Module containing all the validators for the API.
+use actix_web::{Error, post, web, HttpResponse};
+use serde::{Deserialize, Serialize};
+
+/// Module containing all the validator functions for the API.
 mod validators {
     /// Validates that a string's length is within the specified range.
     ///
@@ -9,7 +12,7 @@ mod validators {
     ///
     /// # Returns
     /// A `Result` that is an error with a message if the value does not meet the criteria, or `Ok(())` on success.
-    fn length(min_length: usize, max_length: usize, value: &str) -> Result<(), String> {
+    pub fn length(min_length: usize, max_length: usize, value: &str) -> Result<(), String> {
         if value.len() < min_length {
             Err(format!(
                 "Value must be at least {} characters long",
@@ -32,7 +35,7 @@ mod validators {
     ///
     /// # Returns
     /// A `Result` that is an error with a message if the value does not meet the criteria, or `Ok(())`` on success.
-    fn alphanumeric(value: &str) -> Result<(), String> {
+    pub fn alphanumeric(value: &str) -> Result<(), String> {
         if !value.chars().all(|c| c.is_alphanumeric()) {
             Err("Value must be alphanumeric".to_string())
         } else {
@@ -47,7 +50,7 @@ mod validators {
     ///
     /// # Returns
     /// A `Result` that is an error with a message if the value does not meet the criteria, or `Ok(())` on success.
-    fn currency(value: &str) -> Result<(), String> {
+    pub fn currency(value: &str) -> Result<(), String> {
         let split: Vec<&str> = value.split(['.', ',']).collect();
         let flattened = split.concat();
         let splits = split.len();
@@ -59,14 +62,13 @@ mod validators {
     }
 
     /// Validates that a string is a valid username.
-    /// The username must be between 3 and 20 characters long, contain only alphanumeric characters, and be in lowercase.
     ///
     /// # Arguments
     /// * `value`: The string to be validated as a username.
     ///
     /// # Returns
     /// A `Result` that is an error with a message if the value does not meet the criteria, or `Ok(())` on success.
-    fn username(value: &str) -> Result<(), String> {
+    pub fn username(value: &str) -> Result<(), String> {
         let processed = value.to_lowercase().trim().to_string();
         length(3, 20, &processed)?;
         alphanumeric(&processed)?;
@@ -108,5 +110,26 @@ mod validators {
             assert!(username("inv@lid").is_err());
             assert!(username("").is_err());
         }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct ValidateQuery {
+    value: String,
+}
+
+#[post("/validate/username")]
+pub async fn validate_username(query: web::Json<ValidateQuery>) -> Result<HttpResponse, Error> {
+    match validators::username(&query.value) {
+        Ok(_) => Ok(HttpResponse::Ok().body("OK")),
+        Err(str) => Ok(HttpResponse::Ok().body(str)),
+    }
+}
+
+#[post("/validate/currency")]
+pub async fn validate_currency(query: web::Json<ValidateQuery>) -> Result<HttpResponse, Error> {
+    match validators::currency(&query.value) {
+        Ok(_) => Ok(HttpResponse::Ok().body("OK")),
+        Err(str) => Ok(HttpResponse::Ok().body(str)),
     }
 }

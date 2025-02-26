@@ -29,6 +29,8 @@ pub fn config(cfg: &mut web::ServiceConfig) {
             .service(item::new_item)
             .service(item::buy_item)
             .service(transactions::get_transactions)
+            .service(validation::validate_username)
+            .service(validation::validate_currency)
             .app_data(
                 MultipartFormConfig::default()
                     .total_limit(10 * 1024 * 1024) // 10MiB maximum file upload size
