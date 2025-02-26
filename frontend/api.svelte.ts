@@ -9,7 +9,7 @@ const api = (() => {
     /**
      * Updates API runes with fresh information from the server
      */
-    const updateAPI = async (): Promise<void> => {
+    const update = async (): Promise<void> => {
         try {
             const user: User = await getUserInfo();
             userInfo.isLoggedIn = true;
@@ -237,7 +237,7 @@ const api = (() => {
     };
 
     return {
-        login, logout, newUser, getUserInfo, updateAPI, getItems, newItem, newAttachment, buyItem, adminGive, adminPromote, validate
+        login, logout, newUser, getUserInfo, update, getItems, newItem, newAttachment, buyItem, adminGive, adminPromote, validate
     };
 })();
 

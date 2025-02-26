@@ -23,7 +23,7 @@
                 attachments.push(response.id);
                 await api.newItem({title, amount: parseInt(amount), attachments, description, price});
                 error = "Success!";
-                await api.updateAPI();
+                await api.update();
             } catch (err: any) {
                 error = err.toString();
             }

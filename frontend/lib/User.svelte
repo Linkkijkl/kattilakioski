@@ -54,7 +54,7 @@
         }, debounceTimeout);
     };
 
-    onMount(api.updateAPI);
+    onMount(api.update);
 </script>
 
 {#if !userInfo.isLoggedIn}

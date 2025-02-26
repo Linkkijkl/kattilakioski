@@ -31,7 +31,7 @@
 		} catch (err: any) {
 			alert(err.toString());
 		}
-		await api.updateAPI();
+		await api.update();
 	};
 
 	const view = async () => {

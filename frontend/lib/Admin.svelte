@@ -18,7 +18,7 @@
             const user = await api.getUserInfo(giveUserInput);
             await api.adminGive({user_id: user.id, amount_cents: amountCents});
             giveError = "Success!";
-            api.updateAPI();
+            api.update();
         } catch (err: any) {
             giveError = err.toString();
         }
@@ -31,13 +31,13 @@
             const user = await api.getUserInfo(giveUserInput);
             await api.adminPromote(user.id);
             promoteError = "Success!";
-            api.updateAPI();
+            api.update();
         } catch (err: any) {
             promoteError = err.toString();
         }
     };
 
-    onMount(api.updateAPI);
+    onMount(api.update);
 </script>
 
 <form class="column" onsubmit={giveSubmit}>

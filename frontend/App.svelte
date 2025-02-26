@@ -36,7 +36,7 @@
     drawerOpen = false;
   };
 
-  onMount(api.updateAPI);
+  onMount(api.update);
 </script>
 
 <main>
