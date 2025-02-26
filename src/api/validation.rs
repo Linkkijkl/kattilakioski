@@ -149,69 +149,67 @@ pub mod validators {
     }
     
     mod tests {
-        use super::*;
-
         #[test]
         fn test_length_validator() {
-            assert!(length(5, 10, "hello").is_ok());
-            assert!(length(5, 10, "helloworld").is_ok());
-            assert!(length(7, 10, "short").is_err());
-            assert!(length(5, 10, "toolongforthisfield").is_err());
+            assert!(super::length(5, 10, "hello").is_ok());
+            assert!(super::length(5, 10, "helloworld").is_ok());
+            assert!(super::length(7, 10, "short").is_err());
+            assert!(super::length(5, 10, "toolongforthisfield").is_err());
         }
 
         #[test]
         fn test_alphanumeric_validator() {
-            assert!(alphanumeric("hello").is_ok());
-            assert!(alphanumeric("hello123").is_ok());
-            assert!(alphanumeric("hello-world").is_err());
+            assert!(super::alphanumeric("hello").is_ok());
+            assert!(super::alphanumeric("hello123").is_ok());
+            assert!(super::alphanumeric("hello-world").is_err());
         }
 
         #[test]
         fn test_currency_validator() {
-            assert!(currency("1234.56").is_ok());
-            assert!(currency("1,234.56").is_err());
-            assert!(currency("1234,56").is_ok());
-            assert!(currency("1234.567").is_err());
+            assert!(super::currency("1234.56").is_ok());
+            assert!(super::currency("1,234.56").is_err());
+            assert!(super::currency("1234,56").is_ok());
+            assert!(super::currency("1234.567").is_err());
         }
 
         #[test]
         fn test_username_validator() {
-            assert!(username("val1duser").is_ok());
-            assert!(username("VaLiDuSER").is_ok());
-            assert!(username("1234567890").is_ok());
-            assert!(username("invalid user").is_err());
-            assert!(username("inv@lid").is_err());
-            assert!(username("").is_err());
+            assert!(super::username("val1duser").is_ok());
+            assert!(super::username("VaLiDuSER").is_ok());
+            assert!(super::username("1234567890").is_ok());
+            assert!(super::username("invalid user").is_err());
+            assert!(super::username("inv@lid").is_err());
+            assert!(super::username("").is_err());
         }
 
         #[test]
         fn test_contains_upper_and_lower_case() {
-            assert!(contains_upper_and_lower_case("Password1!").is_ok());
-            assert!(contains_upper_and_lower_case("password").is_err());
-            assert!(contains_upper_and_lower_case("PASSWORD").is_err());
+            assert!(super::contains_upper_and_lower_case("Password1!").is_ok());
+            assert!(super::contains_upper_and_lower_case("password").is_err());
+            assert!(super::contains_upper_and_lower_case("PASSWORD").is_err());
         }
 
         #[test]
         fn test_contains_number() {
-            assert!(contains_number("Password1!").is_ok());
-            assert!(contains_number("password").is_err());
-            assert!(contains_number("PASSWORD").is_err());
+            assert!(super::contains_number("Password1!").is_ok());
+            assert!(super::contains_number("password").is_err());
+            assert!(super::contains_number("PASSWORD").is_err());
         }
 
         #[test]
         fn test_contains_special() {
-            assert!(contains_special("Password1!").is_ok());
-            assert!(contains_special("password").is_err());
-            assert!(contains_special("PASSWORD").is_err());
+            assert!(super::contains_special("Password1!").is_ok());
+            assert!(super::contains_special("password").is_err());
+            assert!(super::contains_special("PASSWORD").is_err());
         }
 
         #[test]
         fn test_password() {
-            assert!(password("Password1!").is_ok());
-            assert!(password("password").is_err());
-            assert!(password("PASSWORD").is_err());
-            assert!(password("Pass1!").is_err());
-            assert!(password("Pass!").is_err());
+            assert!(super::password("Password1!").is_ok());
+            assert!(super::password("password").is_err());
+            assert!(super::password("PASSWORD").is_err());
+            assert!(super::password("Pass1!").is_err());
+            assert!(super::password("Pass!").is_err());
         }
     }
 }
