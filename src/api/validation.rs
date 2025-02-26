@@ -119,7 +119,7 @@ pub mod validators {
     /// A `Result` that is an error with a message if the value does not meet the criteria, or `Ok(())` on success.
     pub fn username(value: &str) -> Result<(), String> {
         let helper = |value: &str| -> Result<(), String> {
-            length(8, 20, value)?;
+            length(3, 20, value)?;
             alphanumeric(value)?;
             Ok(())
         };

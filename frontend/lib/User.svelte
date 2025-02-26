@@ -2,12 +2,13 @@
     import Button, { Label } from "@smui/button";
     import Textfield from "@smui/textfield";
 
-    import { userInfo, login, newUser, logout, updateAPI } from "../api.svelte";
+    import { userInfo, login, newUser, logout, updateAPI, validate } from "../api.svelte";
     import { onMount } from "svelte";
 
     let usernameInput = $state("");
     let passwordInput = $state("");
     let error = $state("");
+    const debounceTimeout = 500;
 
     const loginSubmit = async (event: Event) => {
         event.preventDefault();
@@ -27,6 +28,32 @@
         }
     };
 
+    let usernameTimer: number;
+    const validateUsername = () => {
+        clearTimeout(usernameTimer);
+        usernameTimer = setTimeout(async () => {
+            try {
+                await validate('username', usernameInput);
+                error = "";
+            } catch (err: any) {
+                error = err.toString();
+            }
+        }, debounceTimeout);
+    };
+
+    let passwordTimer: number;
+    const validatePassword = () => {
+        clearTimeout(passwordTimer);
+        passwordTimer = setTimeout(async () => {
+            try {
+                await validate('password', passwordInput);
+                error = "";
+            } catch (err: any) {
+                error = err.toString();
+            }
+        }, debounceTimeout);
+    };
+
     onMount(updateAPI);
 </script>
 
@@ -39,6 +66,7 @@
                 bind:value={usernameInput}
                 label="Username"
                 input$autocomplete="username"
+                onkeyup={validateUsername}
             ></Textfield>
         </div>
 
@@ -48,6 +76,7 @@
                 bind:value={passwordInput}
                 label="Password"
                 input$autocomplete="new-password"
+                onkeyup={validatePassword}
             ></Textfield>
         </div>
 
