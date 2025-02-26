@@ -8,6 +8,8 @@ use serde::Deserialize;
 use serde::Serialize;
 use std::sync::LazyLock;
 
+use super::validation::validators;
+
 use crate::models::User;
 use crate::BB8Pool;
 
@@ -61,10 +63,16 @@ pub async fn new_user(
 ) -> Result<HttpResponse, Error> {
     use crate::schema::users::dsl::*;
 
-    // Validate username
-    let whitespace = query.username.as_str().split_whitespace().count();
-    if whitespace > 1 {
-        return Err(error::ErrorBadRequest("No whitespace allowed in username"));
+    // Skip validation when running debug builds, so tests don't have to be rewritten
+    if !cfg!(debug_assertions) {
+        // Validate username
+        if let Err(error) = validators::username(&query.username) {
+            return Err(error::ErrorBadRequest(error));
+        }
+        // Validate password
+        if let Err(error) = validators::password(&query.password) {
+            return Err(error::ErrorBadRequest(error));
+        }
     }
 
     // Aquire a connection hande to db

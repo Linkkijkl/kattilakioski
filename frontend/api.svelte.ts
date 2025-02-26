@@ -169,8 +169,8 @@ const getItems = async (query: ItemQuery | null = null): Promise<ItemResult[]> =
 type AttachmentId = number;
 
 type NewItemQuery = {
-    title: String,
-    description: String,
+    title: string,
+    description: string,
     amount: number,
     price: string,
     attachments: AttachmentId[]
@@ -251,8 +251,8 @@ const adminPromote = async (userId: Number | null = null): Promise<void> => {
 };
 
 type AdminGiveQuery = {
-    user_id: Number | null,
-    amount_cents: Number,
+    user_id: number | null,
+    amount_cents: number,
 };
 
 /**
@@ -271,9 +271,35 @@ const adminGive = async (query: AdminGiveQuery): Promise<void> => {
     }
 };
 
+type ValidateQuery = {
+    value: string,
+}
+
+/**
+ * Validates a given value against a specific type of field.
+ * @param {string} type - The type of validation to perform. Must be one of 'password', 'currency', or 'username'.
+ * @param {string} value - The value to validate.
+ * @throws Will throw an error if the validation type is invalid.
+ */
+const validate = async (type: string, value: string): Promise<void> => {
+    if (!['password', 'currency', 'username'].includes(type)) {
+        throw new Error('Invalid validation type');
+    }
+    const body: ValidateQuery = { value };
+    const response = await fetch(`${apiUrl}/validate/${type}`, {
+        body: JSON.stringify(body),
+        method: 'POST',
+        headers,
+    });
+    const response_body = await response.text();
+    if (response_body != 'OK') {
+        throw new Error(response_body);
+    }
+};
+
 export type {
     BuyQuery, ItemQuery, NewItemQuery, UserQuery, ItemResult
 };
 export {
-    login, logout, newUser, getUserInfo, updateAPI, getItems, newItem, newAttachment, buyItem, adminGive, adminPromote
+    login, logout, newUser, getUserInfo, updateAPI, getItems, newItem, newAttachment, buyItem, adminGive, adminPromote, validate
 };
