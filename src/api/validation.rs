@@ -75,6 +75,74 @@ mod validators {
         Ok(())
     }
 
+    /// Validates that a string contains at least one uppercase letter and one lowercase letter.
+    ///
+    /// # Arguments
+    /// * `value`: The string to be validated.
+    ///
+    /// # Returns
+    /// A `Result` that is an error with a message if the value does not meet the criteria, or `Ok(())` on success.
+    pub fn contains_upper_and_lower_case(value: &str) -> Result<(), String> {
+        let has_uppercase = value.chars().any(|c| c.is_uppercase());
+        let has_lowercase = value.chars().any(|c| c.is_lowercase());
+        if has_uppercase && has_lowercase {
+            Ok(())
+        } else {
+            Err("Value must contain at least one uppercase letter and one lowercase letter.".to_string())
+        }
+    }
+
+    /// Validates that a string contains at least one number.
+    ///
+    /// # Arguments
+    /// * `value`: The string to be validated.
+    ///
+    /// # Returns
+    /// A `Result` that is an error with a message if the value does not meet the criteria, or `Ok(())` on success.
+    pub fn contains_number(value: &str) -> Result<(), String> {
+        if value.chars().any(char::is_numeric) {
+            Ok(())
+        } else {
+            Err("Value must contain at least one number.".to_string())
+        }
+    }
+
+    /// Validates that a string contains at least one special character.
+    /// The special characters are defined in the function as "!@#$%^&*()_+-=[]{}|;:,.<>?".
+    ///
+    /// # Arguments
+    /// * `value`: The string to be validated.
+    ///
+    /// # Returns
+    /// A `Result` that is an error with a message if the value does not meet the criteria, or `Ok(())` on success.
+    pub fn contains_special(value: &str) -> Result<(), String> {
+        let special_chars = "!@#$%^&*()_+-=[]{}|;:,.<>?";
+        if value.chars().any(|c| special_chars.contains(c)) {
+            Ok(())
+        } else {
+            Err("Value must contain at least one special character.".to_string())
+        }
+    }
+
+    /// Validates that a string is a valid password, ensuring it meets the following criteria:
+    /// - Length between 8 and 64 characters.
+    /// - Contains at least one uppercase letter and one lowercase letter.
+    /// - Contains at least one number.
+    /// - Contains at least one special character.
+    ///
+    /// # Arguments
+    /// * `value`: The string to be validated as a password.
+    ///
+    /// # Returns
+    /// A `Result` that is an error with a message if the value does not meet the criteria, or `Ok(())` on success.
+    pub fn password(value: &str) -> Result<(), String> {
+        length(8, 64, value)?;
+        contains_upper_and_lower_case(value)?;
+        contains_number(value)?;
+        contains_special(value)?;
+        Ok(())
+    }
+    
     mod tests {
         use super::*;
 
@@ -110,6 +178,36 @@ mod validators {
             assert!(username("inv@lid").is_err());
             assert!(username("").is_err());
         }
+
+        #[test]
+        fn test_contains_upper_and_lower_case() {
+            assert!(contains_upper_and_lower_case("Password1!").is_ok());
+            assert!(contains_upper_and_lower_case("password").is_err());
+            assert!(contains_upper_and_lower_case("PASSWORD").is_err());
+        }
+
+        #[test]
+        fn test_contains_number() {
+            assert!(contains_number("Password1!").is_ok());
+            assert!(contains_number("password").is_err());
+            assert!(contains_number("PASSWORD").is_err());
+        }
+
+        #[test]
+        fn test_contains_special() {
+            assert!(contains_special("Password1!").is_ok());
+            assert!(contains_special("password").is_err());
+            assert!(contains_special("PASSWORD").is_err());
+        }
+
+        #[test]
+        fn test_password() {
+            assert!(password("Password1!").is_ok());
+            assert!(password("password").is_err());
+            assert!(password("PASSWORD").is_err());
+            assert!(password("Pass1!").is_err());
+            assert!(password("Pass!").is_err());
+        }
     }
 }
 
@@ -129,6 +227,14 @@ pub async fn validate_username(query: web::Json<ValidateQuery>) -> Result<HttpRe
 #[post("/validate/currency")]
 pub async fn validate_currency(query: web::Json<ValidateQuery>) -> Result<HttpResponse, Error> {
     match validators::currency(&query.value) {
+        Ok(_) => Ok(HttpResponse::Ok().body("OK")),
+        Err(str) => Ok(HttpResponse::Ok().body(str)),
+    }
+}
+
+#[post("/validate/password")]
+pub async fn validate_password(query: web::Json<ValidateQuery>) -> Result<HttpResponse, Error> {
+    match validators::password(&query.value) {
         Ok(_) => Ok(HttpResponse::Ok().body("OK")),
         Err(str) => Ok(HttpResponse::Ok().body(str)),
     }
