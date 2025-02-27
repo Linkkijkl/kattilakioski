@@ -29,6 +29,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
             .service(item::new_item)
             .service(item::buy_item)
             .service(transactions::get_transactions)
+            .service(transactions::transfer)
             .service(validation::validate_username)
             .service(validation::validate_currency)
             .service(validation::validate_password)
