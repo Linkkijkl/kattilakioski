@@ -31,6 +31,7 @@ diesel::table! {
         item_amount -> Int4,
         transacted_at -> Timestamptz,
         receiver_id -> Int4,
+        amount_cents -> Int4,
     }
 }
 

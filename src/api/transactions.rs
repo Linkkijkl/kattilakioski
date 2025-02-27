@@ -3,8 +3,8 @@ use actix_web::post;
 use actix_web::{error, web, Error, HttpResponse};
 use diesel::prelude::*;
 use diesel::ExpressionMethods;
-use diesel_async::RunQueryDsl;
 use diesel_async::AsyncConnection;
+use diesel_async::RunQueryDsl;
 use futures::try_join;
 use serde::Deserialize;
 use serde::Serialize;
@@ -132,14 +132,18 @@ pub async fn transfer(
                     // Take balance from seller
                     diesel::update(users::table)
                         .filter(users::columns::id.eq(transactor_id))
-                        .set(users::columns::balance_cents
-                            .eq(users::columns::balance_cents - query.amount_cents))
+                        .set(
+                            users::columns::balance_cents
+                                .eq(users::columns::balance_cents - query.amount_cents)
+                        )
                         .execute(con),
                     // Append balance to recipient
                     diesel::update(users::table)
                         .filter(users::columns::id.eq(recipient.id))
-                        .set(users::columns::balance_cents
-                            .eq(users::columns::balance_cents + query.amount_cents))
+                        .set(
+                            users::columns::balance_cents
+                                .eq(users::columns::balance_cents + query.amount_cents)
+                        )
                         .execute(con),
                     // Log transaction
                     diesel::insert_into(transactions::table)
@@ -147,6 +151,7 @@ pub async fn transfer(
                             transactions::columns::payer_id.eq(transactor.id),
                             transactions::columns::receiver_id.eq(recipient.id),
                             transactions::columns::transacted_at.eq(chrono::offset::Utc::now()),
+                            transactions::columns::amount_cents.eq(query.amount_cents)
                         ))
                         .execute(con),
                 )?;

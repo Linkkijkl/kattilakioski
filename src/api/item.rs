@@ -344,6 +344,7 @@ pub async fn buy_item(
                             transactions::columns::receiver_id.eq(seller_id), 
                             transactions::columns::payer_id.eq(buyer_id),
                             transactions::columns::item_amount.eq(item_amount),
+                            transactions::columns::amount_cents.eq(total_price),
                             transactions::columns::transacted_at.eq(chrono::offset::Utc::now()),
                         ))
                         .execute(con),
