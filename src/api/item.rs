@@ -340,9 +340,11 @@ pub async fn buy_item(
                     // Log transaction
                     diesel::insert_into(transactions::table)
                         .values((
-                            transactions::columns::item_id.eq(item_id), // Seller id is deductible from this
-                            transactions::columns::buyer_id.eq(buyer_id),
+                            transactions::columns::item_id.eq(item_id),
+                            transactions::columns::receiver_id.eq(seller_id), 
+                            transactions::columns::payer_id.eq(buyer_id),
                             transactions::columns::item_amount.eq(item_amount),
+                            transactions::columns::amount_cents.eq(total_price),
                             transactions::columns::transacted_at.eq(chrono::offset::Utc::now()),
                         ))
                         .execute(con),

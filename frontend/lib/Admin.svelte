@@ -26,7 +26,6 @@
 
     const promoteSubmit = async (event: Event) => {
         event.preventDefault();
-        const amountCents = Math.floor(parseFloat(giveAmountInput) * 100);
         try {
             const user = await api.getUserInfo(giveUserInput);
             await api.adminPromote(user.id);

@@ -94,7 +94,15 @@ export type ValidateQuery = {
     value: string,
 }
 
-const api = (() => {    
+/**
+ * Represents the query parameters for transferring balance to another user.
+ */
+export type TransferQuery = {
+    amount_cents: number,
+    recipient: string,
+};
+
+const api = (() => {
     /**
      * Updates `userInfo` with fresh information from the server
      */
@@ -142,7 +150,7 @@ const api = (() => {
     };
 
     /**
-     * Creates a new user
+     * Registers a new user
      * @param {UserQuery} query Login information
      */
     const newUser = async (query: UserQuery): Promise<void> => {
@@ -326,9 +334,24 @@ const api = (() => {
         }
     };
 
+    /**
+     * Transfers currency to another user from the user logged in.
+     * @param {TransferQuery} query - User to transfer currency to, and amount to transfer.
+     */
+    const transfer = async (query: TransferQuery): Promise<void> => {
+        const response = await fetch(`${apiUrl}/transfer`, {
+            method: 'POST',
+            body: JSON.stringify(query),
+            headers,
+        });
+        if (response.status != 200) {
+            throw new Error(await response.text());
+        }
+    };
+
     return {
         login, logout, newUser, getUserInfo, update, getItems, newItem, newAttachment, buyItem, adminGive,
-        adminPromote, validate
+        adminPromote, validate, transfer
     };
 })();
 

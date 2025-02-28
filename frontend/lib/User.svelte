@@ -5,17 +5,23 @@
     import api, { userInfo } from "../api.svelte";
     import { onMount } from "svelte";
 
+    const debounceTimeout = 500;
+
     let usernameInput = $state("");
     let passwordInput = $state("");
-    let error = $state("");
-    const debounceTimeout = 500;
+    let loginError = $state("");
+
+    let transferUserInput = $state("");
+    let transferAmountInput = $state("");
+    let transferError = $state("");
 
     const loginSubmit = async (event: Event) => {
         event.preventDefault();
         try {
             await api.login({ username: usernameInput, password: passwordInput });
+            loginError = "";
         } catch (err: any) {
-            error = err.toString();
+            loginError = err.toString();
         }
     };
 
@@ -23,8 +29,20 @@
         event.preventDefault();
         try {
             await api.newUser({ username: usernameInput, password: passwordInput });
+            loginError = "";
         } catch (err: any) {
-            error = err.toString();
+            loginError = err.toString();
+        }
+    };
+
+    const transferSubmit = async (event: Event) => {
+        event.preventDefault();
+        const amountCents = Math.floor(parseFloat(transferAmountInput) * 100);
+        try {
+            await api.transfer({ recipient: transferUserInput, amount_cents: amountCents });
+            transferError = "";
+        } catch (err: any) {
+            transferError = err.toString();
         }
     };
 
@@ -34,9 +52,9 @@
         usernameTimer = setTimeout(async () => {
             try {
                 await api.validate('username', usernameInput);
-                error = "";
+                loginError = "";
             } catch (err: any) {
-                error = err.toString();
+                loginError = err.toString();
             }
         }, debounceTimeout);
     };
@@ -47,9 +65,35 @@
         passwordTimer = setTimeout(async () => {
             try {
                 await api.validate('password', passwordInput);
-                error = "";
+                loginError = "";
             } catch (err: any) {
-                error = err.toString();
+                loginError = err.toString();
+            }
+        }, debounceTimeout);
+    };
+
+    let transferUserTimer: number;
+    const validateTransferUser = () => {
+        clearTimeout(transferUserTimer);
+        transferUserTimer = setTimeout(async () => {
+            try {
+                await api.validate('username', transferUserInput);
+                transferError = "";
+            } catch (err: any) {
+                transferError = err.toString();
+            }
+        }, debounceTimeout);
+    };
+
+    let transferAmountTimer: number;
+    const validateTransferAmount = () => {
+        clearTimeout(transferAmountTimer);
+        transferAmountTimer = setTimeout(async () => {
+            try {
+                await api.validate('currency', transferAmountInput);
+                transferError = "";
+            } catch (err: any) {
+                transferError = err.toString();
             }
         }, debounceTimeout);
     };
@@ -58,7 +102,7 @@
 </script>
 
 {#if !userInfo.isLoggedIn}
-    <form class="login-form" onsubmit={loginSubmit}>
+    <form class="column" onsubmit={loginSubmit}>
         <!-- Login form -->
         <div>
             <Textfield
@@ -89,23 +133,57 @@
             </Button>
         </div>
 
-        {#if error.length != 0}
-            <p class="error">{error}</p>
+        {#if loginError.length != 0}
+            <p class="error">{loginError}</p>
         {/if}
     </form>
 {:else}
     <!-- User info -->
-    <div class="login-form">
+    <div class="column">
+        <h2>Profile</h2>
         <p>Logged in as {userInfo.username}</p><br/>
         <p>Your balance: {userInfo.balance}€</p>
         <Button variant="raised" onclick={api.logout}>
             <Label>Logout</Label>
         </Button>
     </div>
+
+    <!-- Transfer menu -->
+    <form class="column" onsubmit={transferSubmit}>
+        <h2>Transfer currency to another user</h2>
+        <div>
+            <Textfield
+                type="username"
+                bind:value={transferUserInput}
+                label="Username"
+                input$autocomplete="username"
+                onkeyup={validateTransferUser}
+            ></Textfield>
+        </div>
+
+        <div>
+            <Textfield
+                bind:value={transferAmountInput}
+                label="Amount"
+                input$autocomplete="off"
+                onkeyup={validateTransferAmount}
+            ></Textfield>
+        </div>
+
+        <div class="row">
+            <Button variant="raised" type="submit">
+                <Label>Transfer</Label>
+            </Button>
+        </div>
+
+        {#if transferError.length != 0}
+            <p class="error">{transferError}</p>
+        {/if}
+    </form>
 {/if}
 
 <style>
-    .login-form {
+    .column {
         display: flex;
         flex-direction: column;
         justify-content: center;
