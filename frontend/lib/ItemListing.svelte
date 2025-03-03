@@ -2,6 +2,7 @@
     import ItemCard from "./ItemCard.svelte";
     import api from "../api.svelte";
     import type { ItemResult } from "../api.svelte";
+    import CircularProgress from '@smui/circular-progress';
     let { searchTerm = "" } = $props();
     let itemsPromise: Promise<ItemResult[]> = $state(Promise.resolve([]));
     const update = () =>
@@ -15,7 +16,9 @@
 </script>
 
 {#await itemsPromise}
-    <p>loading...</p>
+    <div class="message-container">
+        <CircularProgress style="height: 32px; width: 32px;" indeterminate />
+    </div>
 {:then items}
     <div class="items">
         {#each items as item}
@@ -33,10 +36,14 @@
         {/each}
     </div>
 {:catch error}
-    <p>Something went wrong: {error.message}</p>
+    <div class="message-container">
+        <p>Something went wrong while fetching items: {error.message}</p>
+    </div>
 {/await}
 
 <style>
+    /* fixme: This way of positioning things is ugly and should be replaced. */
+
     :root {
         --xs-columns: 1;
         --sm-columns: 2;
@@ -97,5 +104,15 @@
             100% / var(--columns) - (var(--columns) - 1) *
                 (var(--gap) / var(--columns))
         );
+    }
+
+    .message-container {
+        padding-top: 10px;
+        display: flex;
+        justify-content: center;
+    }
+
+    p {
+        color: grey;
     }
 </style>

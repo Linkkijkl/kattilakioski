@@ -22,6 +22,7 @@
     "@smui/banner": "^8.0.0-beta.3",
     "@smui/button": "^8.0.0-beta.3",
     "@smui/card": "^8.0.0-beta.3",
+    "@smui/circular-progress": "^8.0.0-beta.3",
     "@smui/dialog": "^8.0.0-beta.3",
     "@smui/drawer": "^8.0.0-beta.3",
     "@smui/icon-button": "^8.0.0-beta.3",
