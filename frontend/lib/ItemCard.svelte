@@ -28,20 +28,20 @@
 	};
 
 	const buy = async () => {
-		try {
-			mainDialog.title = "Buy Item";
-			mainDialog.content = `Are you sure you want to buy ${title} for ${price}€?`;
-			mainDialog.confirmText = "yes";
-			mainDialog.cancelText = "no";
-			mainDialog.onCancel = () => {};
-			mainDialog.onConfirm = () => {
+		mainDialog.title = "Buy Item";
+		mainDialog.content = `Are you sure you want to buy ${title} for ${price}€?`;
+		mainDialog.confirmText = "yes";
+		mainDialog.cancelText = "no";
+		mainDialog.onCancel = () => {};
+		mainDialog.onConfirm = () => {
+			try {
 				api.buyItem({amount: 1, item_id: id});
 				dispatch("buyEvent");
-			};
-			mainDialog.isOpen = true;
-		} catch (err: any) {
-			alert(err.toString());
-		}
+			} catch (err: any) {
+				alert(err.toString());
+			}
+		};
+		mainDialog.isOpen = true;
 		await api.update();
 	};
 
