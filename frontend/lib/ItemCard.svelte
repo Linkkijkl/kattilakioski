@@ -11,6 +11,7 @@
 	import Button, { Label } from "@smui/button";
     import api from "../api.svelte";
     import { createEventDispatcher } from "svelte";
+	import { mainDialog } from "../globals.svelte";
 
 	const dispatch = createEventDispatcher();
 
@@ -26,8 +27,18 @@
 
 	const buy = async () => {
 		try {
-			await api.buyItem({amount: 1, item_id: id});
-			dispatch("buyEvent");
+			mainDialog.title = "Buy Item";
+			mainDialog.content = `Are you sure you want to buy ${title} for ${price}€?`;
+			mainDialog.confirmText = "yes";
+			mainDialog.cancelText = "no";
+			mainDialog.onCancel = () => {};
+			mainDialog.onConfirm = () => {
+				console.log("wtf");
+				api.buyItem({amount: 1, item_id: id});
+				console.log("otf");
+				dispatch("buyEvent");
+			};
+			mainDialog.isOpen = true;
 		} catch (err: any) {
 			alert(err.toString());
 		}

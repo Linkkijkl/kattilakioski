@@ -221,6 +221,27 @@
   dependencies:
     tslib "^2.1.0"
 
+"@material/dialog@^14.0.0":
+  version "14.0.0"
+  resolved "https://registry.yarnpkg.com/@material/dialog/-/dialog-14.0.0.tgz#d24d1c1441de343c6615bbc5dfedb068f7e86c05"
+  integrity sha512-E07NEE4jP8jHaw/y2Il2R1a3f4wDFh2sgfCBtRO/Xh0xxJUMuQ7YXo/F3SAA8jfMbbkUv/PHdJUM3I3HmI9mAA==
+  dependencies:
+    "@material/animation" "^14.0.0"
+    "@material/base" "^14.0.0"
+    "@material/button" "^14.0.0"
+    "@material/dom" "^14.0.0"
+    "@material/elevation" "^14.0.0"
+    "@material/feature-targeting" "^14.0.0"
+    "@material/icon-button" "^14.0.0"
+    "@material/ripple" "^14.0.0"
+    "@material/rtl" "^14.0.0"
+    "@material/shape" "^14.0.0"
+    "@material/theme" "^14.0.0"
+    "@material/tokens" "^14.0.0"
+    "@material/touch-target" "^14.0.0"
+    "@material/typography" "^14.0.0"
+    tslib "^2.1.0"
+
 "@material/dom@^14.0.0":
   version "14.0.0"
   resolved "https://registry.yarnpkg.com/@material/dom/-/dom-14.0.0.tgz#dad6908ea26f7cb21b1078f58ec04bd897c615c4"
@@ -674,6 +695,16 @@
   integrity sha512-j4XE0cGn1O4PgfAFyemNE6KQicnjOUnSb+gWD52GJntatBEhszz1GdaKUTIF4oxM/V7RW5nSX2xzrilPytLEwg==
   dependencies:
     "@material/dom" "^14.0.0"
+
+"@smui/dialog@^8.0.0-beta.3":
+  version "8.0.0-beta.3"
+  resolved "https://registry.yarnpkg.com/@smui/dialog/-/dialog-8.0.0-beta.3.tgz#a069d1c11600ae1bd7c5dc0736440171186f45fc"
+  integrity sha512-bsOviW/jsSQwhBHOMjz+5iEpsaI2HZ6Baszp5Z1bVhgh+waVWcIZRTXV0TGLJEcQpian759Z7GaOkiaLFYsc6A==
+  dependencies:
+    "@material/button" "^14.0.0"
+    "@material/dialog" "^14.0.0"
+    "@material/dom" "^14.0.0"
+    "@smui/common" "^8.0.0-beta.3"
 
 "@smui/drawer@^8.0.0-beta.3":
   version "8.0.0-beta.3"

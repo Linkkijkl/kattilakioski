@@ -28,6 +28,7 @@
   import api, { userInfo } from "./api.svelte";
   import { onMount } from "svelte";
   import Admin from "./lib/Admin.svelte";
+  import MainDialog from "./lib/MainDialog.svelte";
 
   let drawerOpen = $state(false);
   let view = $state("buy");
@@ -40,6 +41,7 @@
 </script>
 
 <main>
+  <MainDialog />
   <Drawer variant="modal" bind:open={drawerOpen}>
     <Header>
       <DrawerTitle>Kattilakioski</DrawerTitle>
