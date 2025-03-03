@@ -20,6 +20,11 @@
         <CircularProgress style="height: 32px; width: 32px;" indeterminate />
     </div>
 {:then items}
+    {#if items.length == 0}
+        <div class="message-container">
+            <p>No items found.</p>
+        </div>
+    {/if}
     <div class="items">
         {#each items as item}
             <div class="item">
