@@ -46,6 +46,9 @@
       <Subtitle></Subtitle>
     </Header>
     <Content>
+      <div class="logo-container">
+        <img src="/img/logo.svg" alt="Kattilakioski logo" style="width: 100%;"/>
+      </div>
       <List>
         <Item
           href="javascript:void(0)"
@@ -143,4 +146,10 @@
 </main>
 
 <style>
+  .logo-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0 16px;
+  }
 </style>

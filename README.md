@@ -1,6 +1,8 @@
 # Kattilakioski
 
-Quick readme
+<p align="center">
+  <img src="frontend/public/img/logo.svg" alt="Kattilakioski logo" />
+</p>
 
 ## Deploying in Linux environment
 [Docker](https://www.docker.com/) and [Docker compose](https://docs.docker.com/compose/) required.
