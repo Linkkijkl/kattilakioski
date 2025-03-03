@@ -3,6 +3,7 @@
     import api from "../api.svelte";
     import type { ItemResult } from "../api.svelte";
     import CircularProgress from '@smui/circular-progress';
+    
     let { searchTerm = "" } = $props();
     let itemsPromise: Promise<ItemResult[]> = $state(Promise.resolve([]));
     const update = () =>

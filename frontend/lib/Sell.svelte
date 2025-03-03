@@ -3,6 +3,7 @@
     import Textfield from "@smui/textfield";
     import ItemCard from "./ItemCard.svelte";
     import api from "../api.svelte";
+    import CircularProgress from '@smui/circular-progress';
 
     let title = $state("");
     let description = $state("");
@@ -11,11 +12,13 @@
     let files: FileList | any = $state();
     let imageDataUrl = $state("");
     let error: string = $state("");
+    let progress: boolean = $state(false);
 
     const debounceTimeout = 500;
 
     const sell = async (event: Event) => {
         event.preventDefault();
+        progress = true;
         let attachments = [];
         for (const file of files) {
             try {
@@ -28,6 +31,7 @@
                 error = err.toString();
             }
         }
+        progress = false;
     };
 
     $effect(() => {
@@ -94,6 +98,10 @@
     <Button variant="raised" type="submit">
         <Label>Sell</Label>
     </Button>
+
+    {#if progress}
+        <CircularProgress style="height: 32px; width: 32px;" indeterminate />
+    {/if}
 
     {#if error.length != 0}
         <p class="error">{error}</p>
