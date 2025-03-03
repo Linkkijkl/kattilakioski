@@ -7,3 +7,8 @@ export const mainDialog = $state({
     onConfirm: () => { },
     onCancel: () => { } 
 });
+
+export const mainBanner = $state({
+    isOpen: false,
+    message: ''
+});

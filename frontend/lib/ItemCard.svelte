@@ -10,8 +10,7 @@
 	} from "@smui/card";
 	import Button, { Label } from "@smui/button";
 	import api from "../api.svelte";
-	import { mainDialog } from "../globals.svelte";
-	import type { Action } from "svelte/action";
+	import { mainDialog, mainBanner } from "../globals.svelte";
 
 	let {
 		title = "no title",
@@ -30,12 +29,13 @@
 		mainDialog.confirmText = "yes";
 		mainDialog.cancelText = "no";
 		mainDialog.onCancel = () => {};
-		mainDialog.onConfirm = () => {
+		mainDialog.onConfirm = async () => {
 			try {
-				api.buyItem({ amount: 1, item_id: id });
+				await api.buyItem({ amount: 1, item_id: id });
 				onBuyEvent();
 			} catch (err: any) {
-				alert(err.toString());
+				mainBanner.message = err.toString();
+				mainBanner.isOpen = true;
 			}
 		};
 		mainDialog.isOpen = true;

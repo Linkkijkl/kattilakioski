@@ -29,6 +29,7 @@
   import { onMount } from "svelte";
   import Admin from "./lib/Admin.svelte";
   import MainDialog from "./lib/MainDialog.svelte";
+  import MainBanner from "./lib/MainBanner.svelte";
 
   let drawerOpen = $state(false);
   let view = $state("buy");
@@ -49,7 +50,11 @@
     </Header>
     <Content>
       <div class="logo-container">
-        <img src="/img/logo.svg" alt="Kattilakioski logo" style="width: 100%;"/>
+        <img
+          src="/img/logo.svg"
+          alt="Kattilakioski logo"
+          style="width: 100%;"
+        />
       </div>
       <List>
         <Item
@@ -105,9 +110,7 @@
                 <path fill="currentColor" d={mdiCrown} />
               </Icon>
             </IconButton>
-            <Text>
-              Admin
-            </Text>
+            <Text>Admin</Text>
           </Item>
         {/if}
       </List>
@@ -125,16 +128,16 @@
           </IconButton>
           <TopAppBarTitle>Kattilakioski</TopAppBarTitle>
         </Section>
-        {#if userInfo.isLoggedIn} 
-        <Section align="end" toolbar>
-          Logged in as:
-          { userInfo.username },
-          balance:
-          { userInfo.balance }€
-        </Section>
+        {#if userInfo.isLoggedIn}
+          <Section align="end" toolbar>
+            Logged in as:
+            {userInfo.username}, balance:
+            {userInfo.balance}€
+          </Section>
         {/if}
       </Row>
     </TopAppBar>
+    <MainBanner />
     {#if view === "buy"}
       <ItemListing />
     {:else if view === "sell"}
