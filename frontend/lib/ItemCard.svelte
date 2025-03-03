@@ -13,8 +13,6 @@
     import { createEventDispatcher } from "svelte";
 	import { mainDialog } from "../globals.svelte";
 
-	const dispatch = createEventDispatcher();
-
 	let {
 		title = "no title",
 		description = "no description",
@@ -25,6 +23,10 @@
 		id = NaN,
 	} = $props();
 
+	const dispatch = (type: string) {
+		$host().dispatchEvent(new CustomEvent(type));
+	};
+
 	const buy = async () => {
 		try {
 			mainDialog.title = "Buy Item";
@@ -33,9 +35,7 @@
 			mainDialog.cancelText = "no";
 			mainDialog.onCancel = () => {};
 			mainDialog.onConfirm = () => {
-				console.log("wtf");
 				api.buyItem({amount: 1, item_id: id});
-				console.log("otf");
 				dispatch("buyEvent");
 			};
 			mainDialog.isOpen = true;
