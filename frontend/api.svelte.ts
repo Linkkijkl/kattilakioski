@@ -162,6 +162,7 @@ const api = (() => {
         if (response.status != 200) {
             throw new Error(await response.text());
         }
+        update();
     };
 
     /**
