@@ -115,6 +115,9 @@ const api = (() => {
             userInfo.isAdmin = user.is_admin;
         } catch (err) {
             userInfo.isLoggedIn = false;
+            userInfo.username = "";
+            userInfo.balance = "0";
+            userInfo.isAdmin = false;
         }
     };
 
@@ -131,9 +134,7 @@ const api = (() => {
         if (response.status != 200) {
             throw new Error(await response.text());
         }
-        userInfo.username = query.username;
-        userInfo.isLoggedIn = true;
-        userInfo.isAdmin = (await response.json()).is_admin;
+        update();
     };
 
     /**
@@ -144,9 +145,7 @@ const api = (() => {
         if (response.status != 200) {
             throw new Error(await response.text());
         }
-        userInfo.username = '';
-        userInfo.isLoggedIn = false;
-        userInfo.isAdmin = false;
+        update();
     };
 
     /**
@@ -162,6 +161,7 @@ const api = (() => {
         if (response.status != 200) {
             throw new Error(await response.text());
         }
+        update();
     };
 
     /**

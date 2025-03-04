@@ -19,6 +19,17 @@
   },
   "devDependencies": {
     "@mdi/js": "^7.4.47",
+    "@smui/banner": "^8.0.0-beta.3",
+    "@smui/button": "^8.0.0-beta.3",
+    "@smui/card": "^8.0.0-beta.3",
+    "@smui/circular-progress": "^8.0.0-beta.3",
+    "@smui/dialog": "^8.0.0-beta.3",
+    "@smui/drawer": "^8.0.0-beta.3",
+    "@smui/icon-button": "^8.0.0-beta.3",
+    "@smui/layout-grid": "^8.0.0-beta.3",
+    "@smui/list": "^8.0.0-beta.3",
+    "@smui/textfield": "^8.0.0-beta.3",
+    "@smui/top-app-bar": "^8.0.0-beta.3",
     "@sveltejs/vite-plugin-svelte": "^5.0.3",
     "@tsconfig/svelte": "^5.0.4",
     "smui-theme": "^8.0.0-beta.3",
@@ -27,14 +38,5 @@
     "typescript": "~5.6.2",
     "vite": "^6.0.5"
   },
-  "dependencies": {
-    "@smui/button": "^8.0.0-beta.3",
-    "@smui/card": "^8.0.0-beta.3",
-    "@smui/drawer": "^8.0.0-beta.3",
-    "@smui/icon-button": "^8.0.0-beta.3",
-    "@smui/layout-grid": "^8.0.0-beta.3",
-    "@smui/list": "^8.0.0-beta.3",
-    "@smui/textfield": "^8.0.0-beta.3",
-    "@smui/top-app-bar": "^8.0.0-beta.3"
-  }
+  "dependencies": {}
 }

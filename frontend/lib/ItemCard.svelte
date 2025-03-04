@@ -9,10 +9,8 @@
 		ActionIcons,
 	} from "@smui/card";
 	import Button, { Label } from "@smui/button";
-    import api from "../api.svelte";
-    import { createEventDispatcher } from "svelte";
-
-	const dispatch = createEventDispatcher();
+	import api from "../api.svelte";
+	import { mainDialog, mainBanner } from "../globals.svelte";
 
 	let {
 		title = "no title",
@@ -22,15 +20,25 @@
 		stock = NaN,
 		preview = false,
 		id = NaN,
+		onBuyEvent = () => {},
 	} = $props();
 
 	const buy = async () => {
-		try {
-			await api.buyItem({amount: 1, item_id: id});
-			dispatch("buyEvent");
-		} catch (err: any) {
-			alert(err.toString());
-		}
+		mainDialog.title = "Buy Item";
+		mainDialog.content = `Are you sure you want to buy ${title} for ${price}€?`;
+		mainDialog.confirmText = "yes";
+		mainDialog.cancelText = "no";
+		mainDialog.onCancel = () => {};
+		mainDialog.onConfirm = async () => {
+			try {
+				await api.buyItem({ amount: 1, item_id: id });
+				onBuyEvent();
+			} catch (err: any) {
+				mainBanner.message = err.toString();
+				mainBanner.isOpen = true;
+			}
+		};
+		mainDialog.isOpen = true;
 		await api.update();
 	};
 

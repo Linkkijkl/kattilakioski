@@ -17,9 +17,9 @@
 
     const loginSubmit = async (event: Event) => {
         event.preventDefault();
+        loginError = "";
         try {
             await api.login({ username: usernameInput, password: passwordInput });
-            loginError = "";
         } catch (err: any) {
             loginError = err.toString();
         }
@@ -27,9 +27,9 @@
 
     const registerSumbit = async (event: Event) => {
         event.preventDefault();
+        loginError = "";
         try {
             await api.newUser({ username: usernameInput, password: passwordInput });
-            loginError = "";
         } catch (err: any) {
             loginError = err.toString();
         }

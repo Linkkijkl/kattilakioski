@@ -1,36 +1,55 @@
-<script lang='ts'>
+<script lang="ts">
     import ItemCard from "./ItemCard.svelte";
     import api from "../api.svelte";
     import type { ItemResult } from "../api.svelte";
-    let { searchTerm="" } = $props();
+    import CircularProgress from '@smui/circular-progress';
+    
+    let { searchTerm = "" } = $props();
     let itemsPromise: Promise<ItemResult[]> = $state(Promise.resolve([]));
-    const update = () => itemsPromise = api.getItems({search_term: searchTerm, limit: null, offset: null, get_items_without_stock: false});
+    const update = () =>
+        (itemsPromise = api.getItems({
+            search_term: searchTerm,
+            limit: null,
+            offset: null,
+            get_items_without_stock: false,
+        }));
     update();
 </script>
 
 {#await itemsPromise}
-    <p>loading...</p>
+    <div class="message-container">
+        <CircularProgress style="height: 32px; width: 32px;" indeterminate />
+    </div>
 {:then items}
+    {#if items.length == 0}
+        <div class="message-container">
+            <p>No items found.</p>
+        </div>
+    {/if}
     <div class="items">
         {#each items as item}
             <div class="item">
-                <ItemCard 
+                <ItemCard
                     title={item.title}
                     description={item.description}
                     price={(item.price_cents / 100.0).toString()}
                     stock={item.amount}
                     image={item.attachments[0].thumbnail_path}
                     id={item.id}
-                    on:buyEvent={update}
+                    onBuyEvent={update}
                 />
             </div>
         {/each}
     </div>
 {:catch error}
-    <p>Something went wrong: {error.message}</p>
+    <div class="message-container">
+        <p>Something went wrong while fetching items: {error.message}</p>
+    </div>
 {/await}
 
 <style>
+    /* fixme: This way of positioning things is ugly and should be replaced. */
+
     :root {
         --xs-columns: 1;
         --sm-columns: 2;
@@ -87,6 +106,19 @@
 
     .item {
         flex-shrink: 1;
-        flex-basis: calc(100% / var(--columns) - (var(--columns) - 1 ) * (var(--gap) / var(--columns)));
+        flex-basis: calc(
+            100% / var(--columns) - (var(--columns) - 1) *
+                (var(--gap) / var(--columns))
+        );
+    }
+
+    .message-container {
+        padding-top: 10px;
+        display: flex;
+        justify-content: center;
+    }
+
+    p {
+        color: grey;
     }
 </style>

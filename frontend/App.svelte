@@ -28,6 +28,8 @@
   import api, { userInfo } from "./api.svelte";
   import { onMount } from "svelte";
   import Admin from "./lib/Admin.svelte";
+  import MainDialog from "./lib/MainDialog.svelte";
+  import MainBanner from "./lib/MainBanner.svelte";
 
   let drawerOpen = $state(false);
   let view = $state("buy");
@@ -40,12 +42,20 @@
 </script>
 
 <main>
+  <MainDialog />
   <Drawer variant="modal" bind:open={drawerOpen}>
     <Header>
       <DrawerTitle>Kattilakioski</DrawerTitle>
       <Subtitle></Subtitle>
     </Header>
     <Content>
+      <div class="logo-container">
+        <img
+          src="/img/logo.svg"
+          alt="Kattilakioski logo"
+          style="width: 100%;"
+        />
+      </div>
       <List>
         <Item
           href="javascript:void(0)"
@@ -100,9 +110,7 @@
                 <path fill="currentColor" d={mdiCrown} />
               </Icon>
             </IconButton>
-            <Text>
-              Admin
-            </Text>
+            <Text>Admin</Text>
           </Item>
         {/if}
       </List>
@@ -120,16 +128,16 @@
           </IconButton>
           <TopAppBarTitle>Kattilakioski</TopAppBarTitle>
         </Section>
-        {#if userInfo.isLoggedIn} 
-        <Section align="end" toolbar>
-          Logged in as:
-          { userInfo.username },
-          balance:
-          { userInfo.balance }€
-        </Section>
+        {#if userInfo.isLoggedIn}
+          <Section align="end" toolbar>
+            Logged in as:
+            {userInfo.username}, balance:
+            {userInfo.balance}€
+          </Section>
         {/if}
       </Row>
     </TopAppBar>
+    <MainBanner />
     {#if view === "buy"}
       <ItemListing />
     {:else if view === "sell"}
@@ -143,4 +151,10 @@
 </main>
 
 <style>
+  .logo-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0 16px;
+  }
 </style>

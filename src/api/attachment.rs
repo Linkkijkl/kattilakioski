@@ -65,8 +65,8 @@ pub async fn upload(
 
     // Generate new file name with path
     let (file_path, thumbnail_path) = loop {
-        let id = rand::thread_rng()
-            .sample_iter(&rand::distributions::Alphanumeric)
+        let id = rand::rng()
+            .sample_iter(&rand::distr::Alphanumeric)
             .take(RANDOM_FILE_NAME_LENGTH)
             .map(char::from)
             .collect::<String>();
