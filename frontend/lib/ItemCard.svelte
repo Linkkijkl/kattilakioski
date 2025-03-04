@@ -20,7 +20,8 @@
 		stock = NaN,
 		preview = false,
 		id = NaN,
-		onBuyEvent = () => {},
+		onBuy = () => {},
+		onView = () => {},
 	} = $props();
 
 	const buy = async () => {
@@ -32,7 +33,7 @@
 		mainDialog.onConfirm = async () => {
 			try {
 				await api.buyItem({ amount: 1, item_id: id });
-				onBuyEvent();
+				onBuy();
 			} catch (err: any) {
 				mainBanner.message = err.toString();
 				mainBanner.isOpen = true;
@@ -41,16 +42,12 @@
 		mainDialog.isOpen = true;
 		await api.update();
 	};
-
-	const view = async () => {
-		console.log("Unimplemented");
-	};
 </script>
 
 <div class="card-display">
 	<div class="card-container">
 		<Card>
-			<PrimaryAction onclick={view}>
+			<PrimaryAction onclick={onView}>
 				<Media
 					class="card-media-16x9"
 					aspectRatio="16x9"
