@@ -10,6 +10,8 @@
     } from "@smui/dialog";
     import Button, { Label } from "@smui/button";
     import List, { Item, Graphic, Text } from "@smui/list";
+    import { mdiClose } from "@mdi/js";
+    import IconButton, { Icon } from "@smui/icon-button";
 
 	let {
         isOpen = false,
@@ -32,16 +34,22 @@
 
 <Dialog
     bind:open = {isOpen}
-    aria-labelledby="over-fullscreen-title"
-    aria-describedby="over-fullscreen-content"
+    aria-labelledby="item-title"
+    aria-describedby="item-content"
     surface$style="width: 850px; max-width: calc(100vw - 32px);"
 >
     <Header>
-        <Title id="over-fullscreen-title">{title}</Title>
-        <!-- <IconButton action="close" class="material-icons">close</IconButton> -->
+        <div class="header-content">
+            <Title id="item-title">{title}</Title>
+            <IconButton action="close" onclick={() => { isOpen = false; }}>
+                <Icon tag="svg" viewBox="0 0 24 24" style="text-align: right;">
+                    <path fill="currentColor" d={mdiClose} />
+                </Icon>
+            </IconButton>
+        </div>
     </Header>
-    <Content id="over-fullscreen-content" >
-        <div class="main-container">
+    <Content id="item-content" >
+        <div class="main-content">
             {#if attachments.length > 0}
                 <div class="images">
                     <img src="{attachments[selectedAttachmentIndex].file_path}" alt="Item being sold" class="big-image"/>
@@ -54,10 +62,10 @@
             {/if}
             <div class="info">
                 <div class="title">{title}</div>
-                <div class="description">
+                <p class="description">
                     {#if description.length == 0}No description available.{/if}
                     {description}
-                </div>
+                </p>
                 <div class="infobar">
                     <div class="seller">By: user_id {seller_name}</div>
                     <div class="stock">Stock: {stock}</div>    
@@ -66,7 +74,11 @@
         </div>
     </Content>
     <Actions>
-        <Button onclick={buy}>Buy</Button>
+        <div class="actions">
+            <b class="price">{price}€</b>
+            <!-- TODO: Add Item amount field here -->
+            <Button onclick={buy}>Buy</Button>
+        </div>
     </Actions>
     
 </Dialog>
@@ -77,14 +89,21 @@
         padding: 0;
     }
 
-    .main-container {
+    .header-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-right: 10px;
+    }
+
+    .main-content {
         display: flex;
         flex-direction: column;
         column-gap: 32px;
     }
 
     @media (min-width: 700px) {
-        .main-container {
+        .main-content {
             flex-direction: row;
         }
     }
@@ -109,7 +128,7 @@
     }
 
     .info {
-        margin-top: 30px;
+        margin-top: 10px;
         width: 100%;
         display: flex;
         flex-direction: column;
@@ -124,11 +143,21 @@
     .title {
         font-size: 2rem;
         font-weight: bold;
-        margin-bottom: 10px;
+        color: #333;
     }
 
     .description {
         font-size: 1.2rem;
         line-height: 1.5;
+    }
+
+    .actions {
+        display: flex;
+        flex-direction: right;
+        align-items: center;
+    }
+
+    .price {
+        margin: 0;
     }
 </style>
