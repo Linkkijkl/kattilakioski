@@ -6,12 +6,11 @@
         Title,
         Content,
         Actions,
-        InitialFocus,
     } from "@smui/dialog";
-    import Button, { Label } from "@smui/button";
-    import List, { Item, Graphic, Text } from "@smui/list";
+    import Button from "@smui/button";
     import { mdiClose } from "@mdi/js";
     import IconButton, { Icon } from "@smui/icon-button";
+    import { mainDialog, mainBanner } from "../globals.svelte";
 
 	let {
         isOpen = false,
@@ -22,13 +21,29 @@
 		stock = NaN,
         seller_name = "no seller",
 		onBuy = () => {},
+        id = NaN,
 	} = $props();
 
     let selectedAttachmentIndex = $state(0);
 
-    const buy = () => {
-        console.log("Unimplemented");
-    };
+	const buy = async () => {
+		mainDialog.title = "Buy Item";
+		mainDialog.content = `Are you sure you want to buy ${title} for ${price}€?`;
+		mainDialog.confirmText = "yes";
+		mainDialog.cancelText = "no";
+		mainDialog.onCancel = () => {};
+		mainDialog.onConfirm = async () => {
+			try {
+				await api.buyItem({ amount: 1, item_id: id });
+				onBuy();
+			} catch (err: any) {
+				mainBanner.message = err.toString();
+				mainBanner.isOpen = true;
+			}
+		};
+		mainDialog.isOpen = true;
+		await api.update();
+	};
 
 </script>
 

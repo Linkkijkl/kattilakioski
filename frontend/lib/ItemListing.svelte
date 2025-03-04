@@ -23,7 +23,8 @@
         attachments: Attachment[],
         price: string,
         stock: number,
-        seller_name: string
+        seller_name: string,
+        id: number
     };
 
     let detailInfo: DetailInfo = $state({
@@ -33,7 +34,8 @@
         attachments: [],
         price: "",
         stock: NaN,
-        seller_name: ""
+        seller_name: "",
+        id: NaN
     });
 
     const view = (item: ItemResult) => {
@@ -44,7 +46,8 @@
             attachments: item.attachments,
             price: (item.price_cents / 100.0).toString(),
             stock: item.amount,
-            seller_name: item.seller_id.toString()
+            seller_name: item.seller_id.toString(),
+            id: item.id,
         };
     };
 </script>
