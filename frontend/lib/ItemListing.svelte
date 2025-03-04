@@ -69,7 +69,6 @@
             <div class="item">
                 <ItemCard
                     title={item.title}
-                    description={item.description}
                     price={(item.price_cents / 100.0).toString()}
                     stock={item.amount}
                     image={item.attachments[0].thumbnail_path}
