@@ -1,8 +1,9 @@
 <script lang="ts">
     import ItemCard from "./ItemCard.svelte";
     import api from "../api.svelte";
-    import type { ItemResult } from "../api.svelte";
+    import type { Attachment, ItemResult } from "../api.svelte";
     import CircularProgress from '@smui/circular-progress';
+    import ItemDetail from "./ItemDetail.svelte";
     
     let { searchTerm = "" } = $props();
     let itemsPromise: Promise<ItemResult[]> = $state(Promise.resolve([]));
@@ -14,7 +15,44 @@
             get_items_without_stock: false,
         }));
     update();
+
+    type DetailInfo = {
+        isOpen: boolean,
+        title: string,
+        description: string,
+        attachments: Attachment[],
+        price: string,
+        stock: number,
+        seller_name: string,
+        id: number
+    };
+
+    let detailInfo: DetailInfo = $state({
+        isOpen: false,
+        title: "",
+        description: "",
+        attachments: [],
+        price: "",
+        stock: NaN,
+        seller_name: "",
+        id: NaN
+    });
+
+    const view = (item: ItemResult) => {
+        detailInfo = {
+            isOpen: true,
+            title: item.title,
+            description: item.description,
+            attachments: item.attachments,
+            price: (item.price_cents / 100.0).toString(),
+            stock: item.amount,
+            seller_name: item.seller_id.toString(),
+            id: item.id,
+        };
+    };
 </script>
+
+<ItemDetail onBuy={() => {}} {...detailInfo} />
 
 {#await itemsPromise}
     <div class="message-container">
@@ -31,12 +69,12 @@
             <div class="item">
                 <ItemCard
                     title={item.title}
-                    description={item.description}
                     price={(item.price_cents / 100.0).toString()}
                     stock={item.amount}
                     image={item.attachments[0].thumbnail_path}
                     id={item.id}
-                    onBuyEvent={update}
+                    onBuy={update}
+                    onView={() => view(item)}
                 />
             </div>
         {/each}

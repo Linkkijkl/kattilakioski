@@ -14,13 +14,13 @@
 
 	let {
 		title = "no title",
-		description = "no description",
 		image = "https://placehold.co/320x180?text=16x9",
 		price = "",
 		stock = NaN,
 		preview = false,
 		id = NaN,
-		onBuyEvent = () => {},
+		onBuy = () => {},
+		onView = () => {},
 	} = $props();
 
 	const buy = async () => {
@@ -32,7 +32,7 @@
 		mainDialog.onConfirm = async () => {
 			try {
 				await api.buyItem({ amount: 1, item_id: id });
-				onBuyEvent();
+				onBuy();
 			} catch (err: any) {
 				mainBanner.message = err.toString();
 				mainBanner.isOpen = true;
@@ -41,16 +41,12 @@
 		mainDialog.isOpen = true;
 		await api.update();
 	};
-
-	const view = async () => {
-		console.log("Unimplemented");
-	};
 </script>
 
 <div class="card-display">
 	<div class="card-container">
 		<Card>
-			<PrimaryAction onclick={view}>
+			<PrimaryAction onclick={() => onView()}>
 				<Media
 					class="card-media-16x9"
 					aspectRatio="16x9"
@@ -62,10 +58,9 @@
 							<h2 class="mdc-typography--headline6">
 								{title}
 							</h2>
-							{description}
 						</div>
 						<div>
-							{price}€
+							<b>{price}€</b>
 						</div>
 					</div>
 				</Content>
@@ -73,6 +68,9 @@
 			{#if !preview}
 				<Actions>
 					<ActionButtons>
+						<Button onclick={() => onView()}>
+							<Label>Details</Label>
+						</Button>
 						<Button onclick={buy}>
 							<Label>Buy</Label>
 						</Button>

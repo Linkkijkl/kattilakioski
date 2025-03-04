@@ -114,7 +114,6 @@
 
 <ItemCard
     {title}
-    {description}
     stock={parseInt(amount)}
     {price}
     image={imageDataUrl}
