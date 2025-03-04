@@ -68,11 +68,13 @@
             {#if attachments.length > 0}
                 <div class="images">
                     <img src="{attachments[selectedAttachmentIndex].file_path}" alt="Item being sold" class="big-image"/>
-                    <div class="thumbnails">
-                        {#each attachments as attachment, index}
-                            <img src={attachment.thumbnail_path} alt="Thumbnail {index+1}" class="thumbnail"/>
-                        {/each}
-                    </div>
+                    {#if attachments.length > 1}
+                        <div class="thumbnails">
+                            {#each attachments as attachment, index}
+                                <img src={attachment.thumbnail_path} alt="Thumbnail {index+1}" class="thumbnail"/>
+                            {/each}
+                        </div>
+                    {/if}
                 </div>
             {/if}
             <div class="info">
