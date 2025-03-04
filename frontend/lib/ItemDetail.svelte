@@ -32,79 +32,103 @@
 
 <Dialog
     bind:open = {isOpen}
-    fullscreen
     aria-labelledby="over-fullscreen-title"
     aria-describedby="over-fullscreen-content"
+    surface$style="width: 850px; max-width: calc(100vw - 32px);"
 >
-    {#if attachments.length > 0}
-        <div class="images">
-            <img src="{attachments[selectedAttachmentIndex].file_path}" alt="Item being sold" class="big-image"/>
-            <div class="thumbnails">
-                {#each attachments as attachment, index}
-                    <img src={attachment.thumbnail_path} alt="Thumbnail {index+1}" class="thumbnail"/>
-                {/each}
+    <Header>
+        <Title id="over-fullscreen-title">{title}</Title>
+        <!-- <IconButton action="close" class="material-icons">close</IconButton> -->
+    </Header>
+    <Content id="over-fullscreen-content" >
+        <div class="main-container">
+            {#if attachments.length > 0}
+                <div class="images">
+                    <img src="{attachments[selectedAttachmentIndex].file_path}" alt="Item being sold" class="big-image"/>
+                    <div class="thumbnails">
+                        {#each attachments as attachment, index}
+                            <img src={attachment.thumbnail_path} alt="Thumbnail {index+1}" class="thumbnail"/>
+                        {/each}
+                    </div>
+                </div>
+            {/if}
+            <div class="info">
+                <div class="title">{title}</div>
+                <div class="description">
+                    {#if description.length == 0}No description available.{/if}
+                    {description}
+                </div>
+                <div class="infobar">
+                    <div class="seller">By: user_id {seller_name}</div>
+                    <div class="stock">Stock: {stock}</div>    
+                </div>
             </div>
         </div>
-    {/if}
-    <div class="info">
-        <div class="title">{title}</div>
-        <div class="seller">Seller: {seller_name}</div>
-        <div class="price">{price}€</div>
-        <div class="description">{description}</div>
-        <div class="stock">Stock: {stock}</div>
-        <div class="actions">
-            <Button onclick={buy}>Buy</Button>
-        </div>
-    </div>
+    </Content>
+    <Actions>
+        <Button onclick={buy}>Buy</Button>
+    </Actions>
+    
 </Dialog>
 
 <style>
-    .item-detail {
+    div {
+        margin: 0;
+        padding: 0;
+    }
+
+    .main-container {
         display: flex;
+        flex-direction: column;
+        column-gap: 32px;
+    }
+
+    @media (min-width: 700px) {
+        .main-container {
+            flex-direction: row;
+        }
     }
 
     .images {
+        width: 100%;
         display: flex;
+        flex-direction: column;
     }
 
     .big-image {
-       
+        max-width: 100%;
     }
 
     .thumbnails {
         display: flex;
+        flex-wrap: wrap;
     }
 
     .thumbnail {
-
+        max-width: 25%;
     }
 
     .info {
+        margin-top: 30px;
+        width: 100%;
         display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .infobar {
+        display: flex;
+        justify-content: space-between;
     }
 
     .title {
-        font-size: 1.5rem;
+        font-size: 2rem;
         font-weight: bold;
-    }
-
-    .seller {
-
-    }
-
-    .price {
-    
+        margin-bottom: 10px;
     }
 
     .description {
-    
-    }
-
-    .stock {
-
-    }
-
-    .actions {
-
+        font-size: 1.2rem;
+        line-height: 1.5;
     }
 </style>
