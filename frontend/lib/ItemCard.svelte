@@ -47,7 +47,7 @@
 <div class="card-display">
 	<div class="card-container">
 		<Card>
-			<PrimaryAction onclick={onView}>
+			<PrimaryAction onclick={() => onView}>
 				<Media
 					class="card-media-16x9"
 					aspectRatio="16x9"
