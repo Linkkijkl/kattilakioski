@@ -20,6 +20,7 @@ diesel::table! {
         amount -> Int4,
         seller_id -> Int4,
         created_at -> Timestamptz,
+        hidden -> Bool,
     }
 }
 
@@ -43,6 +44,7 @@ diesel::table! {
         balance_cents -> Int4,
         is_admin -> Bool,
         created_at -> Timestamptz,
+        hidden -> Bool,
     }
 }
 
