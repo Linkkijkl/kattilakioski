@@ -1,11 +1,11 @@
 use actix_multipart::form::MultipartFormConfig;
 use actix_web::{get, web, Error, HttpResponse};
 
-pub mod user;
-pub mod item;
-pub mod attachment;
-pub mod transactions;
 pub mod admin;
+pub mod attachment;
+pub mod item;
+pub mod transactions;
+pub mod user;
 pub mod validation;
 
 #[get("/hello")]

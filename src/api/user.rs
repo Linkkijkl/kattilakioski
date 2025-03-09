@@ -3,7 +3,7 @@ use actix_web::post;
 use actix_web::{error, get, web, Error, HttpResponse};
 use diesel::prelude::*;
 use diesel::ExpressionMethods;
-use diesel_async::RunQueryDsl;
+use diesel_async::{AsyncConnection, RunQueryDsl};
 use serde::Deserialize;
 use serde::Serialize;
 use std::sync::LazyLock;
@@ -151,8 +151,8 @@ enum GetUserQuery {
     UserId(i32),
 }
 
-/// Returns info for a given user. If no user is provided, the endpoint
-/// will use the user currently logged in.
+/// Returns info for a given user. If no user is provided, the endpoint will use the user currently
+/// logged in.
 #[post("/user")]
 pub async fn user_info(
     pool: web::Data<BB8Pool>,
@@ -203,6 +203,85 @@ pub async fn user_info(
     Ok(HttpResponse::Ok().json(user))
 }
 
+#[derive(Serialize, Deserialize)]
+struct RemoveUserQuery {
+    pub password: String,
+}
+
+/// Removes the currently logged in owner from the database. The route refuses to do anything without
+/// when not supplied with the correct password, or when the user still have funds on their accout.
+#[post("/user/remove")]
+pub async fn remove_user(
+    pool: web::Data<BB8Pool>,
+    query: web::Json<RemoveUserQuery>,
+    session: Session,
+) -> Result<HttpResponse, Error> {
+    use crate::schema::attachments;
+    use crate::schema::items;
+    use crate::schema::users;
+
+    let mut con = pool.get().await.map_err(error::ErrorInternalServerError)?;
+
+    let uid = get_login_uid(&session)?.ok_or_else(|| error::ErrorUnauthorized("Not logged in"))?;
+
+    let results = users::table
+        .filter(users::columns::id.eq(&uid))
+        .select(User::as_select())
+        .load(&mut con)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+    // Refuse to do anything with...
+    if let [user] = &results[..] {
+        // ... an incorrect password ...
+        if user.password_hash != hash(&query.password) {
+            return Err(error::ErrorUnauthorized("Incorrect password"))?;
+        }
+        // ... or an account with non-zero balance
+        if user.balance_cents > 0 {
+            return Err(error::ErrorBadRequest(
+                "Cannot remove account with funds in it",
+            ))?;
+        }
+    }
+
+    // Remove users data inside a transaction to not potentially leave partially removed users in the db
+    let result: Result<(), diesel::result::Error> = con
+        .transaction(move |con| {
+            Box::pin(async move {
+                // Detach users attachments from their associated items. Cron will later remove all attachments from the db and disk, as they're left dangling
+                diesel::update(attachments::table)
+                    .set(attachments::columns::item_id.eq::<Option<i32>>(None))
+                    .execute(con)
+                    .await?;
+
+                // Mark users items as hidden
+                diesel::update(items::table)
+                    .set(items::columns::hidden.eq(true))
+                    .execute(con)
+                    .await?;
+
+                // Mark user as hidden, and remove all their identifying information
+                diesel::update(users::table)
+                    .filter(users::columns::id.eq(uid))
+                    .set((
+                        users::columns::hidden.eq(true),
+                        users::columns::username.eq(""),
+                        users::columns::password_hash.eq(""),
+                    ))
+                    .execute(con)
+                    .await?;
+
+                Ok(())
+            })
+        })
+        .await;
+
+    // Propagate errors from transaction
+    result.map_err(error::ErrorInternalServerError)?;
+
+    Ok(HttpResponse::Ok().body("OK"))
+}
+
 #[cfg(test)]
 mod tests {
     use reqwest::Result;
@@ -211,7 +290,7 @@ mod tests {
     use super::*;
     const URL: &str = "http://backend:3030";
 
-    // Test account operations
+    // Test account operations.
     #[test]
     fn account_operations() -> Result<()> {
         // Set things up for testing
