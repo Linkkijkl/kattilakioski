@@ -176,8 +176,8 @@ pub async fn transfer(
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
     use reqwest::Result;
+    use std::sync::Arc;
 
     use crate::api::{admin::AdminGiveQuery, user::UserQuery};
 
@@ -227,9 +227,16 @@ mod tests {
         // Give currency to user 1
         let result = client
             .post(format!("{URL}/api/admin/give"))
-            .json(&AdminGiveQuery{amount_cents: 111, user_id: None})
+            .json(&AdminGiveQuery {
+                amount_cents: 111,
+                user_id: None,
+            })
             .send()?;
-        assert_eq!(result.status(), 200, "Could not give currency to user via admin give query");
+        assert_eq!(
+            result.status(),
+            200,
+            "Could not give currency to user via admin give query"
+        );
 
         // Try to transfer negative currency
         let result = client
@@ -240,7 +247,7 @@ mod tests {
             })
             .send()?;
         assert_eq!(result.status(), 400, "Allowed negative currency transfer");
-        
+
         // Transfer currency
         let result = client
             .post(format!("{URL}/api/transfer"))
@@ -254,11 +261,18 @@ mod tests {
         // Check that balances match with expected values
         let result = client.post(format!("{URL}/api/user")).send()?;
         let user: User = result.json()?;
-        assert_eq!(user.balance_cents, 111 - 10, "User didn't lose the correct amount of currency after transfer");
+        assert_eq!(
+            user.balance_cents,
+            111 - 10,
+            "User didn't lose the correct amount of currency after transfer"
+        );
         let result = client2.post(format!("{URL}/api/user")).send()?;
         let user2: User = result.json()?;
-        assert_eq!(user2.balance_cents, 10, "Recipient didn't gain the correct amount of currency after transfer");
-        
+        assert_eq!(
+            user2.balance_cents, 10,
+            "Recipient didn't gain the correct amount of currency after transfer"
+        );
+
         // Try to transfer more than available balance
         let result = client
             .post(format!("{URL}/api/transfer"))
@@ -267,9 +281,11 @@ mod tests {
                 recipient: "test2".to_string(),
             })
             .send()?;
-        assert!(result.status() == 400, "Transfer didn't fail when user didn't have enough balance");
+        assert!(
+            result.status() == 400,
+            "Transfer didn't fail when user didn't have enough balance"
+        );
 
         Ok(())
-
     }
 }

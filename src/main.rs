@@ -6,10 +6,12 @@ use actix_web::cookie::time::Duration;
 use actix_web::cookie::Key;
 use actix_web::{middleware, web, App, HttpServer};
 use async_fs::DirBuilder;
+use diesel::pg::PgConnection;
+use diesel::Connection;
 use diesel_async::pooled_connection::bb8::Pool;
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
+use diesel_migrations::MigrationHarness;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations};
-use diesel::pg::PgConnection;
 use futures_util::StreamExt;
 use signal_hook::consts::{SIGINT, SIGQUIT, SIGTERM, TERM_SIGNALS};
 use signal_hook::flag;
@@ -17,8 +19,6 @@ use signal_hook_tokio::Signals;
 use std::io::ErrorKind;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
-use diesel_migrations::MigrationHarness;
-use diesel::Connection;
 
 pub type BB8Pool = Pool<diesel_async::AsyncPgConnection>;
 
@@ -32,7 +32,9 @@ fn run_migrations(db_url: &str) {
     // Running migrations async proved to be really hard, so lets just do it sync
     const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
     let mut connection = PgConnection::establish(db_url).expect("Could not connect to database");
-    connection.run_pending_migrations(MIGRATIONS).expect("Could not run database migrations");
+    connection
+        .run_pending_migrations(MIGRATIONS)
+        .expect("Could not run database migrations");
 }
 
 #[actix_web::main]

@@ -1,4 +1,4 @@
-use actix_web::{Error, post, web, HttpResponse};
+use actix_web::{post, web, Error, HttpResponse};
 use serde::{Deserialize, Serialize};
 
 /// Module containing all the validator functions for the API.
@@ -14,15 +14,9 @@ pub mod validators {
     /// A `Result` that is an error with a message if the value does not meet the criteria, or `Ok(())` on success.
     pub fn length(min_length: usize, max_length: usize, value: &str) -> Result<(), String> {
         if value.len() < min_length {
-            Err(format!(
-                "must be at least {} characters long",
-                min_length
-            ))
+            Err(format!("must be at least {} characters long", min_length))
         } else if value.len() > max_length {
-            Err(format!(
-                "must be at most {} characters long",
-                max_length
-            ))
+            Err(format!("must be at most {} characters long", max_length))
         } else {
             Ok(())
         }
@@ -147,7 +141,7 @@ pub mod validators {
         };
         helper(value).map_err(|e| format!("Password {e}"))
     }
-    
+
     mod tests {
         #[test]
         fn test_length_validator() {

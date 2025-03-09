@@ -207,9 +207,16 @@ mod tests {
         // Admin give currency
         let result = client
             .post(format!("{URL}/api/admin/give"))
-            .json(&AdminGiveQuery{amount_cents: 111, user_id: None})
+            .json(&AdminGiveQuery {
+                amount_cents: 111,
+                user_id: None,
+            })
             .send()?;
-        assert_eq!(result.status(), 200, "Could not give currency to user via admin give query");
+        assert_eq!(
+            result.status(),
+            200,
+            "Could not give currency to user via admin give query"
+        );
 
         // Validate that user has the correct amount of currency
         let result = client.post(format!("{URL}/api/user")).send()?;
@@ -219,9 +226,13 @@ mod tests {
         // Promote admin
         let result = client
             .post(format!("{URL}/api/admin/promote"))
-            .json(&AdminPromoteQuery{user_id: user.id})
+            .json(&AdminPromoteQuery { user_id: user.id })
             .send()?;
-        assert_eq!(result.status(), 200, "Could not promote user to admin status");
+        assert_eq!(
+            result.status(),
+            200,
+            "Could not promote user to admin status"
+        );
 
         // Validate that user has the correct amount of currency
         let result = client.post(format!("{URL}/api/user")).send()?;

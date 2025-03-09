@@ -1,5 +1,5 @@
 use diesel::prelude::*;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Queryable, Selectable, Identifiable, Debug, PartialEq)]
 #[diesel(table_name = crate::schema::users)]
@@ -14,6 +14,7 @@ pub struct User {
     pub balance_cents: i32,
     pub created_at: chrono::DateTime<chrono::Local>,
     pub is_admin: bool,
+    pub hidden: bool,
 }
 
 #[derive(Queryable, Selectable, Identifiable, Associations, Debug, PartialEq)]
@@ -29,6 +30,7 @@ pub struct Item {
     pub amount: i32,
     pub seller_id: i32,
     pub created_at: chrono::DateTime<chrono::Local>,
+    pub hidden: bool,
 }
 
 #[derive(Queryable, Selectable, Identifiable, Associations, Debug, PartialEq)]

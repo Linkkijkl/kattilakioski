@@ -53,9 +53,4 @@ diesel::joinable!(attachments -> users (uploader_id));
 diesel::joinable!(items -> users (seller_id));
 diesel::joinable!(transactions -> items (item_id));
 
-diesel::allow_tables_to_appear_in_same_query!(
-    attachments,
-    items,
-    transactions,
-    users,
-);
+diesel::allow_tables_to_appear_in_same_query!(attachments, items, transactions, users,);
