@@ -384,7 +384,7 @@ mod tests {
         };
 
         // Clear database for testing
-        let result = client.get(format!("{URL}/api/admin/db/clear")).send()?;
+        let result = client.get(format!("{URL}/api/debug/db/clear")).send()?;
         assert_eq!(
             result.status(),
             200,

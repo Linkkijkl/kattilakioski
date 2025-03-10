@@ -7,6 +7,7 @@ pub mod item;
 pub mod transactions;
 pub mod user;
 pub mod validation;
+pub mod debug;
 
 #[get("/hello")]
 pub async fn hello_world() -> Result<HttpResponse, Error> {
@@ -22,7 +23,9 @@ pub fn config(cfg: &mut web::ServiceConfig) {
             .service(user::logout)
             .service(user::user_info)
             .service(user::new_user)
-            .service(admin::clear_db)
+            .service(user::remove_user)
+            .service(user::modify_user)
+            .service(debug::clear_db)
             .service(admin::give_balance)
             .service(admin::promote)
             .service(item::get_items)

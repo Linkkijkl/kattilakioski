@@ -1,10 +1,9 @@
 use actix_session::Session;
 use actix_web::post;
-use actix_web::{error, get, web, Error, HttpResponse};
+use actix_web::{error, web, Error, HttpResponse};
 use diesel::prelude::*;
 use diesel::ExpressionMethods;
 use diesel_async::RunQueryDsl;
-use futures::try_join;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -41,40 +40,6 @@ pub async fn session_is_admin(session: &Session, pool: web::Data<BB8Pool>) -> Re
     } else {
         Err(error::ErrorBadRequest("User not found"))
     }
-}
-
-/// Clears the whole database. This endpoint is only accessible in debug builds.
-#[get("/admin/db/clear")]
-pub async fn clear_db(pool: web::Data<BB8Pool>, session: Session) -> Result<HttpResponse, Error> {
-    use crate::schema::attachments::dsl::*;
-    use crate::schema::items::dsl::*;
-    use crate::schema::transactions::dsl::*;
-    use crate::schema::users::dsl::*;
-
-    // Require admin privileges
-    if !session_is_admin(&session, pool.clone()).await? {
-        return Err(error::ErrorForbidden("Insufficent privileges"));
-    }
-
-    // Aquire db connection handle
-    let mut con = pool.get().await.map_err(error::ErrorInternalServerError)?;
-
-    // Remove everything ( in correct order! )
-    try_join!(
-        diesel::delete(attachments).execute(&mut con),
-        diesel::delete(transactions).execute(&mut con)
-    )
-    .map_err(error::ErrorInternalServerError)?;
-    diesel::delete(items)
-        .execute(&mut con)
-        .await
-        .map_err(error::ErrorInternalServerError)?;
-    diesel::delete(users)
-        .execute(&mut con)
-        .await
-        .map_err(error::ErrorInternalServerError)?;
-
-    Ok(HttpResponse::Ok().body("OK"))
 }
 
 #[derive(Serialize, Deserialize)]
@@ -190,7 +155,7 @@ mod tests {
         };
 
         // Clear database for testing
-        let result = client.get(format!("{URL}/api/admin/db/clear")).send()?;
+        let result = client.get(format!("{URL}/api/debug/db/clear")).send()?;
         assert_eq!(
             result.status(),
             200,
