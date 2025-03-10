@@ -65,22 +65,18 @@ pub async fn new_user(
 
     // Skip validation when running debug builds, so tests don't have to be rewritten
     if !cfg!(debug_assertions) {
-        // Validate username
-        if let Err(error) = validators::username(&query.username) {
-            return Err(error::ErrorBadRequest(error));
-        }
-        // Validate password
-        if let Err(error) = validators::password(&query.password) {
-            return Err(error::ErrorBadRequest(error));
-        }
+        validators::username(&query.username).map_err(error::ErrorBadRequest)?;
+        validators::password(&query.password).map_err(error::ErrorBadRequest)?;
     }
+
+    let username_lc = &query.username.to_lowercase();
 
     // Aquire a connection hande to db
     let mut con = pool.get().await.map_err(error::ErrorInternalServerError)?;
 
     // Check if username is already registered
     let results = users
-        .filter(username.eq(&query.username))
+        .filter(username.eq(&username_lc))
         .select(User::as_select())
         .load(&mut con)
         .await
@@ -94,7 +90,7 @@ pub async fn new_user(
     // Insert into db
     let user = diesel::insert_into(crate::schema::users::table)
         .values((
-            username.eq(&query.username),
+            username.eq(&username_lc),
             password_hash.eq(password),
             created_at.eq(chrono::offset::Utc::now()),
         ))
@@ -117,10 +113,12 @@ pub async fn login(
 ) -> Result<HttpResponse, Error> {
     use crate::schema::users::dsl::*;
 
+    let username_lc = &query.username.to_lowercase();
+
     let mut con = pool.get().await.map_err(error::ErrorInternalServerError)?;
 
     let results = users
-        .filter(username.eq(&query.username))
+        .filter(username.eq(&username_lc))
         .select(User::as_select())
         .load(&mut con)
         .await
@@ -278,6 +276,88 @@ pub async fn remove_user(
 
     // Propagate errors from transaction
     result.map_err(error::ErrorInternalServerError)?;
+
+    // Wipe session
+    session.purge();
+
+    Ok(HttpResponse::Ok().body("OK"))
+}
+
+#[derive(Deserialize, Serialize)]
+struct UserModificationQuery {
+    current_password: String,
+    new_password: Option<String>,
+    new_username: Option<String>,
+}
+
+/// Modifies info of the user logged in.
+#[post("/user/modify")]
+async fn modify_user(
+    pool: web::Data<BB8Pool>,
+    query: web::Json<UserModificationQuery>,
+    session: Session,
+) -> Result<HttpResponse, Error> {
+    use crate::schema::users;
+
+    let mut con = pool.get().await.map_err(error::ErrorInternalServerError)?;
+
+    let uid = get_login_uid(&session)?.ok_or_else(|| error::ErrorUnauthorized("Not logged in"))?;
+
+    let results = users::table
+        .filter(users::columns::id.eq(&uid))
+        .select(User::as_select())
+        .load(&mut con)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    // Check password
+    if let [user] = &results[..] {
+        if user.password_hash != hash(&query.current_password) {
+            return Err(error::ErrorUnauthorized("Incorrect password"))?;
+        }
+    }
+
+    // Change passsword if requested
+    if let Some(new_password) = &query.new_password {
+        // Validate password
+        validators::password(new_password).map_err(error::ErrorBadRequest)?;
+
+        // Change password
+        let password_hash = hash(new_password);
+        diesel::update(users::table)
+            .filter(users::columns::id.eq(&uid))
+            .set(users::columns::password_hash.eq(password_hash))
+            .execute(&mut con)
+            .await
+            .map_err(error::ErrorInternalServerError)?;
+    }
+
+    // Change username if requested
+    if let Some(new_username) = &query.new_username {
+        // Validate username
+        validators::username(new_username).map_err(error::ErrorBadRequest)?;
+
+        let username_lc = new_username.to_lowercase();
+
+        // Check if username is already registered
+        let results = users::table
+            .filter(users::columns::username.eq(&username_lc))
+            .select(User::as_select())
+            .load(&mut con)
+            .await
+            .map_err(error::ErrorInternalServerError)?;
+        if !results.is_empty() {
+            return Err(error::ErrorBadRequest("User already registered"));
+        }
+
+        // Change username
+        diesel::update(users::table)
+            .filter(users::columns::id.eq(&uid))
+            .set(users::columns::username.eq(&username_lc))
+            .execute(&mut con)
+            .await
+            .map_err(error::ErrorInternalServerError)?;
+    }
 
     Ok(HttpResponse::Ok().body("OK"))
 }
